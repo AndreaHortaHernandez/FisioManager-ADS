@@ -1,0 +1,134 @@
+import { useStore } from '../../store/useStore';
+import { Card } from '../../components/ui/Card';
+import { TrendingUp, Activity, Award } from 'lucide-react';
+import type { Feedback } from '../../types';
+
+const EMOTION_MAP: Record<Feedback['emotionalState'], { emoji: string; label: string }> = {
+  GREAT:   { emoji: '😄', label: 'Excelente' },
+  GOOD:    { emoji: '🙂', label: 'Bien' },
+  OK:      { emoji: '😐', label: 'Regular' },
+  BAD:     { emoji: '😟', label: 'Mal' },
+  TERRIBLE:{ emoji: '😣', label: 'Terrible' },
+};
+
+function PainBar({ value }: { value: number }) {
+  const pct = (value / 10) * 100;
+  const color = value >= 8 ? 'bg-error' : value >= 5 ? 'bg-tertiary' : 'bg-secondary';
+  return (
+    <div className="flex-1 flex flex-col items-center gap-1 group relative">
+      <span className="text-[9px] font-bold text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity absolute -top-4">
+        {value}
+      </span>
+      <div className="w-full rounded-t-sm bg-surface-container-high h-16 flex items-end overflow-hidden">
+        <div className={`w-full ${color} opacity-75 group-hover:opacity-100 transition-all rounded-t-sm`}
+          style={{ height: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+export function ProgressView() {
+  const currentUserId = useStore(state => state.currentUser);
+  const allFeedbacks = useStore(state => state.feedbacks);
+  const allRoutines  = useStore(state => state.routines);
+
+  const feedbacks = allFeedbacks
+    .filter(f => f.patientId === currentUserId)
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const completedCount = allRoutines.filter(
+    r => r.patientId === currentUserId && r.completed
+  ).length;
+
+  const avgPain = feedbacks.length
+    ? Math.round((feedbacks.reduce((s, f) => s + f.painLevel, 0) / feedbacks.length) * 10) / 10
+    : null;
+
+  const lastFeedbacks = feedbacks.slice(-10);
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+
+  return (
+    <div className="space-y-8 animate-fade-in">
+      <header>
+        <h1 className="text-3xl font-display font-bold text-on-surface mb-1">Mi Progreso</h1>
+        <p className="text-on-surface-variant font-body text-sm">Historial de tus sesiones y bienestar.</p>
+      </header>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card className="flex items-center gap-3 border-ghost">
+          <div className="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center">
+            <Award size={20} />
+          </div>
+          <div>
+            <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wide">Completadas</p>
+            <p className="text-2xl font-display font-bold">{completedCount}</p>
+          </div>
+        </Card>
+        <Card className="flex items-center gap-3 border-ghost">
+          <div className="w-10 h-10 rounded-xl bg-tertiary/10 text-tertiary flex items-center justify-center">
+            <Activity size={20} />
+          </div>
+          <div>
+            <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wide">Dolor Prom.</p>
+            <p className="text-2xl font-display font-bold">{avgPain ?? '—'}</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Pain chart */}
+      {lastFeedbacks.length > 0 && (
+        <Card className="space-y-3 border-ghost">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp size={16} className="text-primary" />
+            <h2 className="font-display font-bold">Nivel de Dolor — Últimas sesiones</h2>
+          </div>
+          <div className="flex items-end gap-1 h-16">
+            {lastFeedbacks.map(f => <PainBar key={f.id} value={f.painLevel} />)}
+          </div>
+          <div className="flex justify-between text-[9px] text-on-surface-variant">
+            <span>{formatDate(lastFeedbacks[0].date)}</span>
+            <span>{formatDate(lastFeedbacks[lastFeedbacks.length - 1].date)}</span>
+          </div>
+        </Card>
+      )}
+
+      {/* Feedback history */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">
+          Historial de Feedback
+        </h2>
+
+        {feedbacks.length === 0 ? (
+          <Card level={2} className="py-10 text-center border-ghost">
+            <p className="text-on-surface-variant">Aún no has registrado feedback.</p>
+          </Card>
+        ) : (
+          [...feedbacks].reverse().map(fb => {
+            const emo = EMOTION_MAP[fb.emotionalState];
+            return (
+              <Card key={fb.id} level={2} className="flex items-center gap-4 border-ghost">
+                <span className="text-3xl">{emo.emoji}</span>
+                <div className="flex-1">
+                  <p className="font-bold text-on-surface">{emo.label}</p>
+                  <p className="text-xs text-on-surface-variant">{formatDate(fb.date)}</p>
+                  {fb.aiSummary && (
+                    <p className="text-xs italic text-on-surface-variant mt-1">"{fb.aiSummary}"</p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-on-surface-variant uppercase font-bold tracking-wide">Dolor</p>
+                  <p className={`text-xl font-display font-bold ${fb.painLevel >= 8 ? 'text-error' : fb.painLevel >= 5 ? 'text-tertiary' : 'text-secondary'}`}>
+                    {fb.painLevel}
+                  </p>
+                </div>
+              </Card>
+            );
+          })
+        )}
+      </section>
+    </div>
+  );
+}

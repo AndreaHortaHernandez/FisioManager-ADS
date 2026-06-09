@@ -1,0 +1,15 @@
+import { api } from './api';
+import type { Feedback } from '../types';
+
+interface CreateFeedbackPayload {
+  routineId: string;
+  painLevel: number;
+  emotionalState: Feedback['emotionalState'];
+  audioRecordUrl?: string;
+  aiSummary?: string;
+}
+
+export const feedbackApi = {
+  getAll: () => api.get<Feedback[]>('/feedback'),
+  create: (data: CreateFeedbackPayload) => api.post<Feedback>('/feedback', data),
+};
