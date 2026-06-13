@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Clock, User, Stethoscope, CheckCircle2, XCircle, Mail } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Clock, User, Stethoscope, CheckCircle2, XCircle, Mail, Plus } from 'lucide-react';
 import { appointmentsApi } from '../../services/appointments.api';
 import type { Appointment } from '../../types';
 import { cn } from '../../utils/cn';
@@ -17,6 +18,7 @@ const statusColor: Record<string, string> = {
 };
 
 export function AdminDashboard() {
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [reminderMsg, setReminderMsg] = useState<Record<string, string>>({});
@@ -54,10 +56,19 @@ export function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-display font-bold mb-1">Agenda del Día</h1>
-      <p className="text-on-surface-variant mb-8">
-        {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-      </p>
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-display font-bold mb-1">Agenda del Día</h1>
+          <p className="text-on-surface-variant">
+            {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </p>
+        </div>
+        <button
+          onClick={() => navigate('/admin/appointments')}
+          className="flex items-center gap-2 bg-primary text-on-primary px-4 py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity shrink-0">
+          <Plus size={18} /> Nueva cita
+        </button>
+      </div>
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">

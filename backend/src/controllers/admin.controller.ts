@@ -16,13 +16,23 @@ export const listTherapists = catchAsync(async (_req: Request, res: Response) =>
 });
 
 export const registerTherapist = catchAsync(async (req: Request, res: Response) => {
-  const { name, email, password, phone, avatarUrl } = req.body;
+  const { name, email, password, phone, avatarUrl, cedula, especialidad } = req.body;
   const exists = await userRepository.findByEmail(email);
   if (exists) throw new AppError('El email ya está registrado', 409);
 
   const hashed = await bcrypt.hash(password, 10);
-  const user = await userRepository.create({ name, email, password: hashed, role: 'THERAPIST', phone, avatarUrl });
+  const user = await userRepository.create({
+    name, email, password: hashed, role: 'THERAPIST', phone, avatarUrl,
+    ...(cedula || especialidad ? { therapistProfile: { cedula, especialidad } } : {}),
+  });
   created(res, sanitize(user));
+});
+
+export const toggleUserActive = catchAsync(async (req: Request, res: Response) => {
+  const user = await userRepository.findById(req.params.id);
+  if (!user) throw new AppError('Usuario no encontrado', 404);
+  const updated = await userRepository.toggleActive(req.params.id, !user.isActive);
+  ok(res, sanitize(updated));
 });
 
 export const listPatients = catchAsync(async (_req: Request, res: Response) => {

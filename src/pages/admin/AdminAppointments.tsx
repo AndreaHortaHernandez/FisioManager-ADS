@@ -30,6 +30,7 @@ export function AdminAppointments() {
   const [patients, setPatients] = useState<PatientOpt[]>([]);
   const [filterDate, setFilterDate] = useState('');
   const [filterTherapist, setFilterTherapist] = useState('');
+  const [filterPatient, setFilterPatient] = useState('');
   const [filterStatus, setFilterStatus] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editAppt, setEditAppt] = useState<Appointment | null>(null);
@@ -47,9 +48,10 @@ export function AdminAppointments() {
   function loadAppointments() {
     setLoading(true);
     appointmentsApi.getAll({
-      date: filterDate || undefined,
+      date:        filterDate      || undefined,
       therapistId: filterTherapist || undefined,
-      status: filterStatus || undefined,
+      patientId:   filterPatient   || undefined,
+      status:      filterStatus    || undefined,
     }).then(setAppointments).finally(() => setLoading(false));
   }
 
@@ -61,7 +63,7 @@ export function AdminAppointments() {
     setFilterDate(d);
   }
 
-  useEffect(() => { loadAppointments(); }, [filterDate, filterTherapist, filterStatus]);
+  useEffect(() => { loadAppointments(); }, [filterDate, filterTherapist, filterPatient, filterStatus]);
 
   function openCreate() {
     setEditAppt(null);
@@ -156,6 +158,12 @@ export function AdminAppointments() {
           className="bg-surface border border-surface-container-high rounded-lg px-3 py-1.5 text-sm">
           <option value="">Todos los terapeutas</option>
           {therapists.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+
+        <select value={filterPatient} onChange={e => setFilterPatient(e.target.value)}
+          className="bg-surface border border-surface-container-high rounded-lg px-3 py-1.5 text-sm">
+          <option value="">Todos los pacientes</option>
+          {patients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
 
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}

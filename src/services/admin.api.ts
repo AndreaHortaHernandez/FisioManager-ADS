@@ -6,8 +6,12 @@ export const adminApi = {
     return api.get<Therapist[]>('/admin/therapists');
   },
 
-  registerTherapist(data: { name: string; email: string; password: string; phone?: string; avatarUrl?: string }) {
+  registerTherapist(data: { name: string; email: string; password: string; phone?: string; cedula?: string; especialidad?: string }) {
     return api.post<Therapist>('/admin/therapists', data);
+  },
+
+  toggleActive(userId: string) {
+    return api.patch<{ id: string; isActive: boolean }>(`/admin/users/${userId}/toggle-active`, {});
   },
 
   getPatients() {

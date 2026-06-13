@@ -47,6 +47,54 @@ export const routineService = {
     return routineRepository.markComplete(id);
   },
 
+  async update(id: string, data: {
+    title: string;
+    type: string;
+    activities: {
+      templateId?: string;
+      title: string;
+      description: string;
+      durationMinutes: number;
+      restSeconds?: number;
+      repetitions: number;
+      type: string;
+      order: number;
+      videoUrl?: string;
+    }[];
+  }) {
+    const existing = await routineRepository.findById(id);
+    if (!existing) throw new AppError('Rutina no encontrada', 404);
+    return routineRepository.update(id, data);
+  },
+
+  async delete(id: string) {
+    const existing = await routineRepository.findById(id);
+    if (!existing) throw new AppError('Rutina no encontrada', 404);
+    return routineRepository.delete(id);
+  },
+
+  async clone(routineId: string) {
+    const original = await routineRepository.findById(routineId);
+    if (!original) throw new AppError('Rutina no encontrada', 404);
+
+    return routineRepository.create({
+      title: `${original.title} (copia)`,
+      type: original.type,
+      patientId: null,
+      activities: original.activities.map(a => ({
+        templateId: a.templateId ?? undefined,
+        title: a.title,
+        description: a.description,
+        durationMinutes: a.durationMinutes,
+        restSeconds: a.restSeconds ?? undefined,
+        repetitions: a.repetitions,
+        type: a.type,
+        order: a.order,
+        videoUrl: a.videoUrl ?? undefined,
+      })),
+    });
+  },
+
   async assignToPatients(routineId: string, patientIds: string[]) {
     const template = await routineRepository.findById(routineId);
     if (!template) throw new AppError('Rutina no encontrada', 404);

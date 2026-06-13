@@ -16,4 +16,13 @@ export const routinesApi = {
   markComplete: (id: string) => api.patch<Routine>(`/routines/${id}/complete`),
   assignToPatients: (id: string, patientIds: string[]) =>
     api.post<Routine[]>(`/routines/${id}/assign`, { patientIds }),
+
+  clone: (id: string) =>
+    api.post<Routine>(`/routines/${id}/clone`, {}),
+
+  update: (id: string, data: CreateRoutinePayload) =>
+    api.patch<Routine>(`/routines/${id}`, data),
+
+  delete: (id: string) =>
+    api.delete<void>(`/routines/${id}`),
 };

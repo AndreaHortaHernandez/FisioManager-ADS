@@ -1,11 +1,13 @@
 import { z } from 'zod';
 
 export const registerTherapistSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  password: z.string().min(6),
-  phone: z.string().optional(),
-  avatarUrl: z.string().url().optional(),
+  name:         z.string().min(2),
+  email:        z.string().email(),
+  password:     z.string().min(6),
+  phone:        z.string().optional(),
+  avatarUrl:    z.string().url().optional(),
+  cedula:       z.string().optional(),
+  especialidad: z.string().optional(),
 });
 
 export const registerPatientSchema = z.object({

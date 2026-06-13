@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Plus, User, Mail, Phone } from 'lucide-react';
+import { Plus, User, Mail, Phone, ToggleLeft, ToggleRight } from 'lucide-react';
 import { adminApi } from '../../services/admin.api';
 import type { Therapist } from '../../types';
 
 type PatientRow = {
   id: string; name: string; email: string; phone?: string; avatarUrl?: string;
+  isActive: boolean;
   patientProfile?: { age: number; condition: string; therapistId: string } | null;
 };
 
@@ -35,13 +36,9 @@ export function AdminPatients() {
     setError('');
     try {
       const created = await adminApi.registerPatient({
-        name: form.name,
-        email: form.email,
-        password: form.password,
-        phone: form.phone || undefined,
-        age: Number(form.age),
-        condition: form.condition,
-        therapistId: form.therapistId,
+        name: form.name, email: form.email, password: form.password,
+        phone: form.phone || undefined, age: Number(form.age),
+        condition: form.condition, therapistId: form.therapistId,
       });
       setPatients(prev => [created as PatientRow, ...prev]);
       setShowForm(false);
@@ -49,6 +46,11 @@ export function AdminPatients() {
     } catch (e: unknown) {
       setError((e as Error).message);
     }
+  }
+
+  async function handleToggle(p: PatientRow) {
+    const updated = await adminApi.toggleActive(p.id);
+    setPatients(prev => prev.map(x => x.id === p.id ? { ...x, isActive: updated.isActive } : x));
   }
 
   const f = (k: keyof typeof emptyForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -71,7 +73,6 @@ export function AdminPatients() {
         <div className="mb-4 px-4 py-3 bg-primary-container text-primary rounded-xl text-sm">{success}</div>
       )}
 
-      {/* Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
@@ -116,7 +117,6 @@ export function AdminPatients() {
         </div>
       )}
 
-      {/* Tabla */}
       <div className="bg-surface-container rounded-2xl overflow-hidden">
         <table className="w-full">
           <thead>
@@ -125,11 +125,12 @@ export function AdminPatients() {
               <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Contacto</th>
               <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Padecimiento</th>
               <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Edad</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Estado</th>
             </tr>
           </thead>
           <tbody>
             {patients.length === 0 && (
-              <tr><td colSpan={4} className="p-8 text-center text-on-surface-variant">Sin pacientes registrados</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">Sin pacientes registrados</td></tr>
             )}
             {patients.map(p => (
               <tr key={p.id} className="border-b border-surface-container-high last:border-0 hover:bg-surface transition-colors">
@@ -148,6 +149,16 @@ export function AdminPatients() {
                 </td>
                 <td className="p-4 text-sm">{p.patientProfile?.condition ?? '—'}</td>
                 <td className="p-4 text-sm">{p.patientProfile?.age ?? '—'}</td>
+                <td className="p-4">
+                  <button onClick={() => handleToggle(p)}
+                    className="flex items-center gap-1.5 text-sm transition-colors"
+                    title={p.isActive ? 'Desactivar' : 'Activar'}>
+                    {p.isActive
+                      ? <><ToggleRight size={22} className="text-primary" /><span className="text-primary font-medium">Activo</span></>
+                      : <><ToggleLeft size={22} className="text-on-surface-variant" /><span className="text-on-surface-variant">Inactivo</span></>
+                    }
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

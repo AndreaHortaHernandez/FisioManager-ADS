@@ -2,8 +2,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { ArrowLeft, Activity, CheckCircle2, PlayCircle } from 'lucide-react';
+import { ArrowLeft, Activity, CheckCircle2, PlayCircle, Mic, Sparkles, AlertTriangle } from 'lucide-react';
 import type { Feedback } from '../../types';
+
+const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
 
 const EMOTION_MAP: Record<Feedback['emotionalState'], { emoji: string; label: string }> = {
   GREAT:    { emoji: '😄', label: 'Excelente' },
@@ -51,6 +53,12 @@ export function PatientDetail() {
   const avgPain = feedbacks.length
     ? Math.round((feedbacks.reduce((s, f) => s + f.painLevel, 0) / feedbacks.length) * 10) / 10
     : null;
+
+  const last5 = feedbacks.slice(0, 5);
+  const highPainCount = last5.filter(f => f.painLevel >= 7).length;
+  const latestPainHigh = feedbacks[0]?.painLevel >= 7;
+  const recurringHighPain = highPainCount >= 3;
+  const showAlert = latestPainHigh || recurringHighPain;
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -103,6 +111,22 @@ export function PatientDetail() {
           </div>
         </Card>
       </div>
+
+      {showAlert && (
+        <div className="flex items-start gap-3 bg-error/10 border border-error/30 rounded-2xl p-4">
+          <AlertTriangle size={20} className="text-error shrink-0 mt-0.5" />
+          <div>
+            <p className="font-bold text-sm text-error">
+              {recurringHighPain
+                ? `Dolor elevado recurrente — ${highPainCount} de los últimos ${last5.length} reportes ≥ 7`
+                : `Último reporte con dolor elevado — ${feedbacks[0].painLevel}/10`}
+            </p>
+            <p className="text-xs text-on-surface-variant mt-0.5">
+              Se recomienda revisar el plan de tratamiento o contactar al paciente.
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Routines column */}
@@ -178,15 +202,40 @@ export function PatientDetail() {
               {feedbacks.map(fb => {
                 const emo = EMOTION_MAP[fb.emotionalState];
                 return (
-                  <Card key={fb.id} level={2} className="flex items-center gap-3 border-ghost py-3">
-                    <span className="text-2xl">{emo.emoji}</span>
-                    <div className="flex-1">
-                      <p className="font-bold text-sm">{emo.label}</p>
-                      <p className="text-xs text-on-surface-variant">{formatDate(fb.date)}</p>
+                  <Card key={fb.id} level={2} className="border-ghost space-y-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{emo.emoji}</span>
+                      <div className="flex-1">
+                        <p className="font-bold text-sm">{emo.label}</p>
+                        <p className="text-xs text-on-surface-variant">{formatDate(fb.date)}</p>
+                      </div>
+                      <p className={`text-lg font-display font-bold ${fb.painLevel >= 8 ? 'text-error' : fb.painLevel >= 5 ? 'text-tertiary' : 'text-secondary'}`}>
+                        {fb.painLevel}/10
+                      </p>
                     </div>
-                    <p className={`text-lg font-display font-bold ${fb.painLevel >= 8 ? 'text-error' : fb.painLevel >= 5 ? 'text-tertiary' : 'text-secondary'}`}>
-                      {fb.painLevel}
-                    </p>
+                    {fb.audioRecordUrl && (
+                      <div className="space-y-1.5">
+                        <p className="flex items-center gap-1.5 text-xs font-bold text-on-surface-variant">
+                          <Mic size={12} /> Nota de voz
+                        </p>
+                        <audio controls src={`${BACKEND_URL}${fb.audioRecordUrl}`} className="w-full h-8" />
+                      </div>
+                    )}
+                    {fb.transcript && (
+                      <div className="bg-surface-container rounded-xl p-3">
+                        <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wide mb-1">Transcript</p>
+                        <p className="text-xs text-on-surface leading-relaxed">{fb.transcript}</p>
+                      </div>
+                    )}
+                    {fb.aiSummary && (
+                      <div className="bg-primary/8 rounded-xl p-3 flex gap-2">
+                        <Sparkles size={14} className="text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-xs font-bold text-primary uppercase tracking-wide mb-1">Resumen clínico IA</p>
+                          <p className="text-xs text-on-surface leading-relaxed">{fb.aiSummary}</p>
+                        </div>
+                      </div>
+                    )}
                   </Card>
                 );
               })}

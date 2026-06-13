@@ -7,12 +7,31 @@ export const feedbackService = {
     return feedbackRepository.findByPatientId(userId);
   },
 
+  async getAnalisis(feedbackId: string, userId: string, role: string) {
+    const feedback = await feedbackRepository.findById(feedbackId);
+    if (!feedback) throw new AppError('Feedback no encontrado', 404);
+
+    const authorized =
+      role === 'THERAPIST' ||
+      (role === 'PATIENT' && feedback.patientId === userId);
+    if (!authorized) throw new AppError('Sin permiso', 403);
+
+    return {
+      feedbackId: feedback.id,
+      date:       feedback.date,
+      painLevel:  feedback.painLevel,
+      transcript: feedback.transcript ?? null,
+      aiSummary:  feedback.aiSummary  ?? null,
+    };
+  },
+
   async create(data: {
-    routineId: string;
+    routineId?: string;
     patientId: string;
     painLevel: number;
     emotionalState: string;
     audioRecordUrl?: string;
+    transcript?: string;
     aiSummary?: string;
   }) {
     if (data.painLevel < 1 || data.painLevel > 10) {

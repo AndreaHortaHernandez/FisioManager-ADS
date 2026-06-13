@@ -4,7 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Modal } from '../../components/ui/Modal';
-import { Plus, Video, Image, Wind, Dumbbell, Upload, X } from 'lucide-react';
+import { Plus, Video, Image, Wind, Dumbbell, Upload, X, Trash2 } from 'lucide-react';
 import type { BodyPart } from '../../types';
 
 const BODY_PARTS: { value: BodyPart; label: string }[] = [
@@ -20,7 +20,10 @@ const BODY_PARTS: { value: BodyPart; label: string }[] = [
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
 
-function ExerciseCard({ template }: { template: { id: string; title: string; description: string; imageUrl?: string; videoUrl?: string; bodyPart?: string } }) {
+function ExerciseCard({ template, onDelete }: {
+  template: { id: string; title: string; description: string; imageUrl?: string; videoUrl?: string; bodyPart?: string };
+  onDelete: (id: string) => void;
+}) {
   const media = template.imageUrl ?? template.videoUrl;
   const isVideo = !!template.videoUrl && !template.imageUrl;
 
@@ -41,7 +44,13 @@ function ExerciseCard({ template }: { template: { id: string; title: string; des
         )}
       </div>
       <h3 className="font-bold text-on-surface text-sm leading-tight mb-1">{template.title}</h3>
-      <p className="text-xs text-on-surface-variant line-clamp-2">{template.description}</p>
+      <p className="text-xs text-on-surface-variant line-clamp-2 mb-3">{template.description}</p>
+      <button
+        onClick={() => onDelete(template.id)}
+        className="mt-auto flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-xs font-bold text-error hover:bg-error/10 transition-colors"
+      >
+        <Trash2 size={13} /> Eliminar
+      </button>
     </Card>
   );
 }
@@ -49,6 +58,12 @@ function ExerciseCard({ template }: { template: { id: string; title: string; des
 export function ExerciseLibrary() {
   const templates = useStore(state => state.activityTemplates);
   const addActivityTemplate = useStore(state => state.addActivityTemplate);
+  const deleteActivityTemplate = useStore(state => state.deleteActivityTemplate);
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('¿Eliminar este ejercicio del catálogo?')) return;
+    await deleteActivityTemplate(id);
+  };
 
   const physical = templates.filter(t => t.type === 'PHYSICAL');
   const breathing = templates.filter(t => t.type === 'BREATHING');
@@ -155,7 +170,7 @@ export function ExerciseLibrary() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {filteredPhysical.map(t => <ExerciseCard key={t.id} template={t} />)}
+            {filteredPhysical.map(t => <ExerciseCard key={t.id} template={t} onDelete={handleDelete} />)}
           </div>
         )}
       </section>
@@ -176,7 +191,7 @@ export function ExerciseLibrary() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-            {breathing.map(t => <ExerciseCard key={t.id} template={t} />)}
+            {breathing.map(t => <ExerciseCard key={t.id} template={t} onDelete={handleDelete} />)}
           </div>
         )}
       </section>

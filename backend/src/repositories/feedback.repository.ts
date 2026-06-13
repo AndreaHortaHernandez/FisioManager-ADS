@@ -3,6 +3,10 @@ import { prisma } from '../lib/prisma';
 const include = { routine: true } as const;
 
 export const feedbackRepository = {
+  findById(id: string) {
+    return prisma.feedback.findUnique({ where: { id }, include });
+  },
+
   findAll() {
     return prisma.feedback.findMany({ include, orderBy: { date: 'desc' } });
   },
@@ -24,11 +28,12 @@ export const feedbackRepository = {
   },
 
   create(data: {
-    routineId: string;
+    routineId?: string;
     patientId: string;
     painLevel: number;
     emotionalState: string;
     audioRecordUrl?: string;
+    transcript?: string;
     aiSummary?: string;
   }) {
     return prisma.feedback.create({ data, include });

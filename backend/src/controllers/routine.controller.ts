@@ -39,3 +39,18 @@ export const assignRoutine = catchAsync(async (req: Request, res: Response) => {
   );
   created(res, routines);
 });
+
+export const cloneRoutine = catchAsync(async (req: Request, res: Response) => {
+  const routine = await routineService.clone(req.params.id);
+  created(res, routine);
+});
+
+export const updateRoutine = catchAsync(async (req: Request, res: Response) => {
+  const routine = await routineService.update(req.params.id, req.body);
+  ok(res, routine);
+});
+
+export const deleteRoutine = catchAsync(async (req: Request, res: Response) => {
+  await routineService.delete(req.params.id);
+  ok(res, { message: 'Rutina eliminada' });
+});

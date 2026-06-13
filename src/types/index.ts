@@ -12,6 +12,9 @@ export interface Patient extends User {
   age: number;
   condition: string;
   therapistId: string;
+  isActive: boolean;
+  email?: string;
+  phone?: string;
 }
 
 export interface Activity {
@@ -57,6 +60,7 @@ export interface Feedback {
   emotionalState: 'GREAT' | 'GOOD' | 'OK' | 'BAD' | 'TERRIBLE';
   audioRecordUrl?: string;
   aiSummary?: string;
+  transcript?: string;
   date: string;
 }
 
@@ -66,7 +70,26 @@ export interface Therapist {
   email: string;
   phone?: string;
   avatarUrl?: string;
+  isActive: boolean;
   role: 'THERAPIST';
+  therapistProfile?: { cedula?: string; especialidad?: string } | null;
+}
+
+export type AssignmentFrequency = 'DAILY' | 'EVERY_OTHER_DAY' | 'WEEKLY';
+export type AssignmentStatus   = 'ACTIVE' | 'PAUSED' | 'CANCELLED';
+
+export interface RoutineAssignment {
+  id:          string;
+  routineId:   string;
+  patientId:   string;
+  therapistId: string;
+  startDate:   string;
+  endDate?:    string;
+  frequency:   AssignmentFrequency;
+  status:      AssignmentStatus;
+  createdAt:   string;
+  routine?:    { id: string; title: string; type: string };
+  patient?:    { id: string; name: string; avatarUrl?: string };
 }
 
 export type AppointmentStatus = 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';

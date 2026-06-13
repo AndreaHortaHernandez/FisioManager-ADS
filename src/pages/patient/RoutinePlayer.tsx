@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Play, Pause, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Play, Pause, ChevronRight, CheckCircle2, SkipForward } from 'lucide-react';
 import { cn } from '../../utils/cn';
+import { sessionApi } from '../../services/session.api';
 
 export function RoutinePlayer() {
   const { id } = useParams();
@@ -21,6 +22,17 @@ export function RoutinePlayer() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRoutineFinished, setIsRoutineFinished] = useState(false);
 
+  const sessionIdRef = useRef<string | null>(null);
+
+  // Crear sesión al montar
+  useEffect(() => {
+    if (!routine) return;
+    sessionApi.start(routine.id)
+      .then(s => { sessionIdRef.current = s.id; })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routine?.id]);
+
   // Initialize timer when activity or phase changes
   useEffect(() => {
     if (!routine) return;
@@ -28,7 +40,6 @@ export function RoutinePlayer() {
     if (!currentActivity) return;
 
     if (phase === 'EXERCISE') {
-      // Convert minutes to seconds for the timer
       setTimeLeft(currentActivity.durationMinutes * 60);
     } else if (phase === 'REST') {
       setTimeLeft(currentActivity.restSeconds || 0);
@@ -44,8 +55,7 @@ export function RoutinePlayer() {
         setTimeLeft(prev => prev - 1);
       }, 1000);
     } else if (isPlaying && timeLeft === 0) {
-      // Time is up, handle transition
-      handlePhaseComplete();
+      handlePhaseComplete('COMPLETED');
     }
 
     return () => {
@@ -53,37 +63,20 @@ export function RoutinePlayer() {
     };
   }, [isPlaying, timeLeft]);
 
-  const handlePhaseComplete = () => {
-    if (!routine) return;
-    
-    // Auto pause briefly as transition safety
-    setIsPlaying(false);
-
-    const currentActivity = routine.activities[currentIndex];
-
-    if (phase === 'EXERCISE') {
-      if (currentRepetition < currentActivity.repetitions) {
-        // More reps needed. Go to rest if configured
-        if (currentActivity.restSeconds && currentActivity.restSeconds > 0) {
-          setPhase('REST');
-        } else {
-          setCurrentRepetition(prev => prev + 1);
-          setPhase('EXERCISE');
-        }
-      } else {
-        // All reps for this activity are done
-        moveToNextActivity();
-      }
-    } else if (phase === 'REST') {
-      // Finished resting between reps, go to next rep
-      setCurrentRepetition(prev => prev + 1);
-      setPhase('EXERCISE');
-    }
+  const recordExercise = (status: 'COMPLETED' | 'SKIPPED') => {
+    if (!routine || !sessionIdRef.current) return;
+    const activity = routine.activities[currentIndex];
+    sessionApi.trackExercise(sessionIdRef.current, {
+      activityId: activity.id,
+      order:      currentIndex,
+      status,
+    }).catch(() => {});
   };
 
-  const moveToNextActivity = () => {
+  const moveToNextActivity = (status: 'COMPLETED' | 'SKIPPED') => {
     if (!routine) return;
-    
+    recordExercise(status);
+
     if (currentIndex < routine.activities.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setCurrentRepetition(1);
@@ -93,11 +86,44 @@ export function RoutinePlayer() {
     }
   };
 
-  const handleFinishRoutine = async () => {
-    if (routine) {
-      await markRoutineComplete(routine.id);
-      navigate('/patient');
+  const handlePhaseComplete = (trigger: 'COMPLETED' | 'SKIPPED' = 'COMPLETED') => {
+    if (!routine) return;
+    setIsPlaying(false);
+
+    const currentActivity = routine.activities[currentIndex];
+
+    if (phase === 'EXERCISE') {
+      if (trigger === 'SKIPPED') {
+        moveToNextActivity('SKIPPED');
+      } else if (currentRepetition < currentActivity.repetitions) {
+        if (currentActivity.restSeconds && currentActivity.restSeconds > 0) {
+          setPhase('REST');
+        } else {
+          setCurrentRepetition(prev => prev + 1);
+          setPhase('EXERCISE');
+        }
+      } else {
+        moveToNextActivity('COMPLETED');
+      }
+    } else if (phase === 'REST') {
+      // Saltar descanso: avanzar al siguiente rep sin registrar
+      setCurrentRepetition(prev => prev + 1);
+      setPhase('EXERCISE');
     }
+  };
+
+  const handleFinishRoutine = async () => {
+    if (!routine) return;
+    try {
+      if (sessionIdRef.current) {
+        await sessionApi.finalize(sessionIdRef.current);
+      } else {
+        await markRoutineComplete(routine.id);
+      }
+    } catch {
+      await markRoutineComplete(routine.id).catch(() => {});
+    }
+    navigate('/patient/feedback');
   };
 
   if (!routine) {
@@ -110,12 +136,10 @@ export function RoutinePlayer() {
   }
 
   const currentActivity = routine.activities[currentIndex];
-  // Calculate Progress
-  const totalSteps = routine.activities.length * 2; // exercise + rest counts as 2 steps
+  const totalSteps = routine.activities.length * 2;
   const currentStep = (currentIndex * 2) + (phase === 'REST' ? 1 : 0);
   const progressPercent = (currentStep / totalSteps) * 100;
 
-  // Format time (MM:SS)
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -135,7 +159,7 @@ export function RoutinePlayer() {
            </p>
         </div>
         <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
-           <div 
+           <div
              className="bg-primary h-full transition-all duration-500 ease-out"
              style={{ width: `${progressPercent}%` }}
            />
@@ -182,7 +206,7 @@ export function RoutinePlayer() {
               <p className="text-sm text-on-surface-variant mb-6 px-4">
                 {currentActivity.description}
               </p>
-              
+
               {/* Giant Timer */}
               <div className="flex flex-col items-center justify-center mb-2">
                 <p className={cn(
@@ -216,29 +240,38 @@ export function RoutinePlayer() {
 
       {/* Float Controls */}
       {!isRoutineFinished && (
-        <div className="fixed bottom-24 left-4 right-4 bg-surface/80 backdrop-blur-md p-4 rounded-3xl shadow-ambient border-ghost border flex gap-4 items-center animate-slide-up z-40">
-           {/* Play/Pause Button */}
-           <button 
+        <div className="fixed bottom-24 left-4 right-4 bg-surface/80 backdrop-blur-md p-4 rounded-3xl shadow-ambient border-ghost border flex gap-3 items-center animate-slide-up z-40">
+           {/* Play/Pause */}
+           <button
              onClick={() => setIsPlaying(!isPlaying)}
              className={cn(
-               "w-14 h-14 rounded-full flex items-center justify-center shadow-md transition-transform active:scale-95",
+               "w-14 h-14 rounded-full flex items-center justify-center shadow-md transition-transform active:scale-95 shrink-0",
                isPlaying ? "bg-error text-white" : "bg-primary text-white"
              )}
            >
              {isPlaying ? <Pause size={24} /> : <Play size={24} className="ml-1" />}
            </button>
-           
+
            <div className="flex-1 text-center">
              <p className="text-xs text-on-surface-variant font-bold tracking-wider">
                 {isPlaying ? 'ACTIVE' : 'PAUSED'}
              </p>
            </div>
-           
-           {/* Skip to Next (Only enabled when time is up or manually allowing skip) */}
-           <Button 
-             onClick={handlePhaseComplete}
-             disabled={timeLeft > 0} // Can only advance when timer hits 0
-             className="flex items-center gap-1 rounded-full px-6"
+
+           {/* Omitir */}
+           <button
+             onClick={() => handlePhaseComplete('SKIPPED')}
+             className="flex items-center gap-1 text-xs font-bold text-on-surface-variant hover:text-error transition-colors px-2"
+           >
+             <SkipForward size={16} />
+             Omitir
+           </button>
+
+           {/* Siguiente — solo cuando el timer llega a 0 */}
+           <Button
+             onClick={() => handlePhaseComplete('COMPLETED')}
+             disabled={timeLeft > 0}
+             className="flex items-center gap-1 rounded-full px-5"
            >
              Next <ChevronRight size={18} />
            </Button>

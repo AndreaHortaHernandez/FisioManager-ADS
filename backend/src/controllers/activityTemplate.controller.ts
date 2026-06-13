@@ -8,6 +8,11 @@ export const getTemplates = catchAsync(async (_req: Request, res: Response) => {
   ok(res, templates);
 });
 
+export const deleteTemplate = catchAsync(async (req: Request, res: Response) => {
+  await activityTemplateService.delete(req.params.id);
+  ok(res, { message: 'Ejercicio eliminado' });
+});
+
 export const createTemplate = catchAsync(async (req: Request, res: Response) => {
   const { title, description, type, bodyPart } = req.body;
 

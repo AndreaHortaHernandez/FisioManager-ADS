@@ -1,9 +1,10 @@
-
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { useStore } from '../../store/useStore';
 import { Users, Activity, HeartPulse } from 'lucide-react';
 
 export function TherapistDashboard() {
+  const navigate = useNavigate();
   const currentTherapist = useStore(state => state.role === 'THERAPIST' ? 'Dr. Sarah Jenkins' : '');
   const patients = useStore(state => state.patients);
   const totalPatients = patients.length;
@@ -56,7 +57,11 @@ export function TherapistDashboard() {
           <Card level={2}>
             <div className="space-y-4">
               {patients.map(patient => (
-                <div key={patient.id} className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer border-ghost">
+                <div
+                  key={patient.id}
+                  onClick={() => navigate(`/therapist/patients/${patient.id}`)}
+                  className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer border-ghost"
+                >
                   <div className="flex items-center gap-4">
                      <img src={patient.avatarUrl} alt={patient.name} className="w-12 h-12 rounded-full" />
                      <div>
@@ -65,7 +70,7 @@ export function TherapistDashboard() {
                      </div>
                   </div>
                   <div className="text-right">
-                     <span className="text-xs bg-surface-container px-3 py-1 rounded-full font-bold text-primary">View Details</span>
+                     <span className="text-xs bg-surface-container px-3 py-1 rounded-full font-bold text-primary">Ver detalle →</span>
                   </div>
                 </div>
               ))}
@@ -77,15 +82,24 @@ export function TherapistDashboard() {
         <div className="space-y-4">
           <h2 className="text-xl font-display font-bold text-on-surface">Quick Actions</h2>
           <Card level={2} className="space-y-3">
-             <button className="w-full text-left p-4 bg-surface-container-lowest rounded-xl font-bold text-on-surface hover:text-primary transition-colors flex justify-between items-center group">
+             <button
+               onClick={() => navigate('/therapist/routines/builder')}
+               className="w-full text-left p-4 bg-surface-container-lowest rounded-xl font-bold text-on-surface hover:text-primary transition-colors flex justify-between items-center group"
+             >
                Build New Routine
                <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
              </button>
-             <button className="w-full text-left p-4 bg-surface-container-lowest rounded-xl font-bold text-on-surface hover:text-primary transition-colors flex justify-between items-center group">
+             <button
+               onClick={() => navigate('/therapist/routines')}
+               className="w-full text-left p-4 bg-surface-container-lowest rounded-xl font-bold text-on-surface hover:text-primary transition-colors flex justify-between items-center group"
+             >
                Browse Library
                <span className="opacity-0 group-hover:opacity-100 transition-opacity">→</span>
              </button>
-             <button className="w-full text-left p-4 bg-surface-container-lowest rounded-xl font-bold text-on-surface hover:text-primary transition-colors flex justify-between items-center group">
+             <button
+               onClick={() => navigate('/therapist/patients')}
+               className="w-full text-left p-4 bg-surface-container-lowest rounded-xl font-bold text-on-surface hover:text-primary transition-colors flex justify-between items-center group"
+             >
                Review Feedback
                <div className="bg-error w-2 h-2 rounded-full"></div>
              </button>

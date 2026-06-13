@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
-import { TrendingUp, Activity, Award } from 'lucide-react';
+import { TrendingUp, Activity, Award, Flame, Target, Sparkles } from 'lucide-react';
 import type { Feedback } from '../../types';
+import { progressApi, type PatientProgress } from '../../services/progress.api';
 
 const EMOTION_MAP: Record<Feedback['emotionalState'], { emoji: string; label: string }> = {
   GREAT:   { emoji: '😄', label: 'Excelente' },
@@ -27,10 +29,27 @@ function PainBar({ value }: { value: number }) {
   );
 }
 
+function AdherenceBar({ count, max, day, date }: { count: number; max: number; day: string; date: string }) {
+  const isToday = date === new Date().toISOString().split('T')[0];
+  const pct     = max > 0 ? (count / max) * 100 : 0;
+  return (
+    <div className="flex-1 flex flex-col items-center gap-1.5">
+      <div className="w-full h-16 bg-surface-container-high rounded-lg flex items-end overflow-hidden">
+        <div
+          className={`w-full rounded-t-lg transition-all ${count > 0 ? 'bg-secondary' : 'bg-transparent'}`}
+          style={{ height: `${Math.max(pct, count > 0 ? 10 : 0)}%` }}
+        />
+      </div>
+      <span className={`text-[10px] font-bold ${isToday ? 'text-primary' : 'text-on-surface-variant'}`}>{day}</span>
+      {count > 0 && <span className="text-[9px] text-secondary font-bold">{count}</span>}
+    </div>
+  );
+}
+
 export function ProgressView() {
   const currentUserId = useStore(state => state.currentUser);
-  const allFeedbacks = useStore(state => state.feedbacks);
-  const allRoutines  = useStore(state => state.routines);
+  const allFeedbacks  = useStore(state => state.feedbacks);
+  const allRoutines   = useStore(state => state.routines);
 
   const feedbacks = allFeedbacks
     .filter(f => f.patientId === currentUserId)
@@ -40,14 +59,20 @@ export function ProgressView() {
     r => r.patientId === currentUserId && r.completed
   ).length;
 
-  const avgPain = feedbacks.length
-    ? Math.round((feedbacks.reduce((s, f) => s + f.painLevel, 0) / feedbacks.length) * 10) / 10
-    : null;
-
   const lastFeedbacks = feedbacks.slice(-10);
 
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+
+  const [progress, setProgress] = useState<PatientProgress | null>(null);
+
+  useEffect(() => {
+    progressApi.getProgreso().then(setProgress).catch(() => {});
+  }, []);
+
+  const adherenceMax = progress
+    ? Math.max(...progress.adherenceByDay.map(d => d.count), 1)
+    : 1;
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -73,10 +98,56 @@ export function ProgressView() {
           </div>
           <div>
             <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wide">Dolor Prom.</p>
-            <p className="text-2xl font-display font-bold">{avgPain ?? '—'}</p>
+            <p className="text-2xl font-display font-bold">{progress?.avgPain ?? '—'}</p>
+          </div>
+        </Card>
+        <Card className="flex items-center gap-3 border-ghost">
+          <div className="w-10 h-10 rounded-xl bg-error/10 text-error flex items-center justify-center">
+            <Flame size={20} />
+          </div>
+          <div>
+            <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wide">Racha</p>
+            <p className="text-2xl font-display font-bold">{progress?.streak ?? 0} <span className="text-sm font-normal">días</span></p>
+          </div>
+        </Card>
+        <Card className="flex items-center gap-3 border-ghost">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <Target size={20} />
+          </div>
+          <div>
+            <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wide">Esta semana</p>
+            <p className="text-2xl font-display font-bold">
+              {progress ? `${progress.weeklyGoal.completed}/${progress.weeklyGoal.target}` : '—'}
+            </p>
           </div>
         </Card>
       </div>
+
+      {/* Adherence bars — 7 days */}
+      {progress && (
+        <Card className="space-y-3 border-ghost">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp size={16} className="text-secondary" />
+            <h2 className="font-display font-bold">Adherencia — Últimos 7 días</h2>
+          </div>
+          <div className="flex items-end gap-2">
+            {progress.adherenceByDay.map(d => (
+              <AdherenceBar key={d.date} count={d.count} max={adherenceMax} day={d.day} date={d.date} />
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* AI Smart Insight */}
+      {progress?.aiInsight && (
+        <Card className="bg-primary/5 border-ghost space-y-2">
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} className="text-primary" />
+            <h2 className="font-display font-bold text-primary">Insight de tu progreso</h2>
+          </div>
+          <p className="text-sm text-on-surface leading-relaxed">{progress.aiInsight}</p>
+        </Card>
+      )}
 
       {/* Pain chart */}
       {lastFeedbacks.length > 0 && (

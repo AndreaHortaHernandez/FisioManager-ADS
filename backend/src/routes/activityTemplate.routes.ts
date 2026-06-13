@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
-import { getTemplates, createTemplate } from '../controllers/activityTemplate.controller';
+import { getTemplates, createTemplate, deleteTemplate } from '../controllers/activityTemplate.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { requireRole } from '../middlewares/role.middleware';
 
@@ -21,5 +21,6 @@ router.use(authMiddleware);
 
 router.get('/', getTemplates);
 router.post('/', requireRole('THERAPIST'), upload.fields([{ name: 'video', maxCount: 1 }, { name: 'image', maxCount: 1 }]), createTemplate);
+router.delete('/:id', requireRole('THERAPIST'), deleteTemplate);
 
 export { router as activityTemplateRouter };

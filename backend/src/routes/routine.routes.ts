@@ -6,6 +6,9 @@ import {
   createRoutine,
   markComplete,
   assignRoutine,
+  cloneRoutine,
+  updateRoutine,
+  deleteRoutine,
 } from '../controllers/routine.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { requireRole } from '../middlewares/role.middleware';
@@ -22,5 +25,8 @@ router.get('/:id', getRoutineById);
 router.post('/', requireRole('THERAPIST'), validate(createRoutineSchema), createRoutine);
 router.patch('/:id/complete', markComplete);
 router.post('/:id/assign', requireRole('THERAPIST'), validate(assignRoutineSchema), assignRoutine);
+router.post('/:id/clone', requireRole('THERAPIST'), cloneRoutine);
+router.patch('/:id', requireRole('THERAPIST'), validate(createRoutineSchema), updateRoutine);
+router.delete('/:id', requireRole('THERAPIST'), deleteRoutine);
 
 export { router as routineRouter };

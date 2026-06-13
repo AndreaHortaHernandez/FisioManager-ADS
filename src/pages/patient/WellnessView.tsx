@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { cn } from '../../utils/cn';
+import { ClipboardCheck } from 'lucide-react';
 
 type Phase = 'idle' | 'inhale' | 'hold-in' | 'exhale' | 'hold-out';
 
@@ -14,6 +16,7 @@ const PHASES: { key: Phase; label: string; duration: number; color: string }[] =
 ];
 
 export function WellnessView() {
+  const navigate  = useNavigate();
   const templates = useStore(state => state.activityTemplates);
   const breathing = templates.filter(t => t.type === 'BREATHING');
 
@@ -61,6 +64,22 @@ export function WellnessView() {
         <h1 className="text-3xl font-display font-bold text-on-surface mb-1">Centro de Bienestar</h1>
         <p className="text-on-surface-variant font-body text-sm">Ejercicios de respiración y relajación.</p>
       </header>
+
+      {/* Check-in CTA */}
+      <Card
+        level={2}
+        className="flex items-center gap-4 border-ghost cursor-pointer hover:bg-surface-container transition-colors"
+        onClick={() => navigate('/patient/wellness-checkin')}
+      >
+        <div className="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center shrink-0">
+          <ClipboardCheck size={22} />
+        </div>
+        <div className="flex-1">
+          <p className="font-bold text-on-surface">Check-in de Bienestar</p>
+          <p className="text-xs text-on-surface-variant">Registra cómo te sientes hoy — estado emocional y diario.</p>
+        </div>
+        <span className="text-on-surface-variant text-lg">›</span>
+      </Card>
 
       {/* Breathing guide */}
       <Card className="flex flex-col items-center py-8 gap-6 border-ghost relative overflow-hidden">

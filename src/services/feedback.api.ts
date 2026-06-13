@@ -2,11 +2,12 @@ import { api } from './api';
 import type { Feedback } from '../types';
 
 interface CreateFeedbackPayload {
-  routineId: string;
-  painLevel: number;
+  routineId?:     string;
+  painLevel:      number;
   emotionalState: Feedback['emotionalState'];
   audioRecordUrl?: string;
-  aiSummary?: string;
+  transcript?:    string;
+  aiSummary?:     string;
 }
 
 export const feedbackApi = {

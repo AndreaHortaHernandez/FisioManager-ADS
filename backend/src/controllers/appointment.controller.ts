@@ -4,8 +4,8 @@ import { catchAsync } from '../utils/catchAsync';
 import { ok, created } from '../utils/response';
 
 export const getAppointments = catchAsync(async (req: Request, res: Response) => {
-  const { date, therapistId, status } = req.query as Record<string, string>;
-  const appointments = await appointmentService.getAll({ date, therapistId, status });
+  const { date, therapistId, patientId, status } = req.query as Record<string, string>;
+  const appointments = await appointmentService.getAll({ date, therapistId, patientId, status });
   ok(res, appointments);
 });
 

@@ -23,6 +23,7 @@ import { RoutinePlayer } from './pages/patient/RoutinePlayer';
 import { ProgressView } from './pages/patient/ProgressView';
 import { WellnessView } from './pages/patient/WellnessView';
 import { FeedbackView } from './pages/patient/FeedbackView';
+import { WellnessCheckin } from './pages/patient/WellnessCheckin';
 
 // Therapist pages
 import { TherapistDashboard } from './pages/therapist/TherapistDashboard';
@@ -69,6 +70,7 @@ function App() {
           <Route path="wellness" element={<WellnessView />} />
           <Route path="progress" element={<ProgressView />} />
           <Route path="feedback" element={<FeedbackView />} />
+          <Route path="wellness-checkin" element={<WellnessCheckin />} />
         </Route>
 
         {/* Rutas de Terapeuta */}
@@ -79,6 +81,7 @@ function App() {
           <Route path="exercises" element={<ExerciseLibrary />} />
           <Route path="routines" element={<RoutineLibrary />} />
           <Route path="routines/builder" element={<RoutineBuilder />} />
+          <Route path="routines/builder/:id" element={<RoutineBuilder />} />
           <Route path="analytics" element={<AnalyticsView />} />
           <Route path="settings" element={<Placeholder title="Configuración" />} />
         </Route>

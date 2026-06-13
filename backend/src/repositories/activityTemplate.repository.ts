@@ -19,4 +19,8 @@ export const activityTemplateRepository = {
   }) {
     return prisma.activityTemplate.create({ data });
   },
+
+  delete(id: string) {
+    return prisma.activityTemplate.delete({ where: { id } });
+  },
 };

@@ -6,4 +6,7 @@ export const activityTemplatesApi = {
 
   create: (formData: FormData) =>
     api.postForm<ActivityTemplate>('/activity-templates', formData),
+
+  delete: (id: string) =>
+    api.delete<void>(`/activity-templates/${id}`),
 };

@@ -2,11 +2,12 @@ import { api } from './api';
 import type { Appointment } from '../types';
 
 export const appointmentsApi = {
-  getAll(params?: { date?: string; therapistId?: string; status?: string }) {
+  getAll(params?: { date?: string; therapistId?: string; patientId?: string; status?: string }) {
     const query = new URLSearchParams();
-    if (params?.date) query.set('date', params.date);
+    if (params?.date)        query.set('date',        params.date);
     if (params?.therapistId) query.set('therapistId', params.therapistId);
-    if (params?.status) query.set('status', params.status);
+    if (params?.patientId)   query.set('patientId',   params.patientId);
+    if (params?.status)      query.set('status',      params.status);
     const qs = query.toString();
     return api.get<Appointment[]>(`/appointments${qs ? `?${qs}` : ''}`);
   },

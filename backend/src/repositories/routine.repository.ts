@@ -61,4 +61,35 @@ export const routineRepository = {
       include,
     });
   },
+
+  async update(id: string, data: {
+    title: string;
+    type: string;
+    activities: {
+      templateId?: string;
+      title: string;
+      description: string;
+      durationMinutes: number;
+      restSeconds?: number;
+      repetitions: number;
+      type: string;
+      order: number;
+      videoUrl?: string;
+    }[];
+  }) {
+    const { activities, ...routineData } = data;
+    await prisma.activity.deleteMany({ where: { routineId: id } });
+    return prisma.routine.update({
+      where: { id },
+      data: {
+        ...routineData,
+        activities: { createMany: { data: activities } },
+      },
+      include,
+    });
+  },
+
+  delete(id: string) {
+    return prisma.routine.delete({ where: { id } });
+  },
 };

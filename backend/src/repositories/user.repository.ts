@@ -1,6 +1,6 @@
 import { prisma } from '../lib/prisma';
 
-const include = { patientProfile: true } as const;
+const include = { patientProfile: true, therapistProfile: true } as const;
 
 export const userRepository = {
   findById(id: string) {
@@ -19,6 +19,10 @@ export const userRepository = {
     });
   },
 
+  toggleActive(id: string, isActive: boolean) {
+    return prisma.user.update({ where: { id }, data: { isActive }, include });
+  },
+
   updatePatientProfile(patientId: string, therapistId: string) {
     return prisma.patientProfile.update({
       where: { userId: patientId },
@@ -33,19 +37,15 @@ export const userRepository = {
     role: string;
     avatarUrl?: string;
     phone?: string;
-    patientProfile?: {
-      age: number;
-      condition: string;
-      therapistId: string;
-    };
+    patientProfile?: { age: number; condition: string; therapistId: string };
+    therapistProfile?: { cedula?: string; especialidad?: string };
   }) {
-    const { patientProfile, ...userData } = data;
+    const { patientProfile, therapistProfile, ...userData } = data;
     return prisma.user.create({
       data: {
         ...userData,
-        ...(patientProfile
-          ? { patientProfile: { create: patientProfile } }
-          : {}),
+        ...(patientProfile   ? { patientProfile:   { create: patientProfile   } } : {}),
+        ...(therapistProfile ? { therapistProfile: { create: therapistProfile } } : {}),
       },
       include,
     });
