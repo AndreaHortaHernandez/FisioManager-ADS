@@ -61,3 +61,20 @@ export const assignPatient = catchAsync(async (req: Request, res: Response) => {
   await userRepository.updatePatientProfile(req.params.id, therapistId);
   ok(res, { message: 'Asignación actualizada correctamente' });
 });
+
+export const listUsers = catchAsync(async (_req: Request, res: Response) => {
+  const users = await userRepository.findAll();
+  ok(res, users.map(sanitize));
+});
+
+export const createAssignment = catchAsync(async (req: Request, res: Response) => {
+  const { patientId, therapistId } = req.body;
+  const patient = await userRepository.findById(patientId);
+  if (!patient || patient.role !== 'PATIENT') throw new AppError('Paciente no encontrado', 404);
+
+  const therapist = await userRepository.findById(therapistId);
+  if (!therapist || therapist.role !== 'THERAPIST') throw new AppError('Terapeuta no encontrado', 404);
+
+  await userRepository.updatePatientProfile(patientId, therapistId);
+  ok(res, { message: 'Asignación creada correctamente' });
+});

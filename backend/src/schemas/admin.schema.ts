@@ -24,3 +24,8 @@ export const registerPatientSchema = z.object({
 export const assignPatientSchema = z.object({
   therapistId: z.string().min(1),
 });
+
+export const createAssignmentSchema = z.object({
+  patientId: z.string().min(1),
+  therapistId: z.string().min(1),
+});

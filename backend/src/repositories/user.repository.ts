@@ -19,6 +19,13 @@ export const userRepository = {
     });
   },
 
+  findAll() {
+    return prisma.user.findMany({
+      include,
+      orderBy: { name: 'asc' },
+    });
+  },
+
   toggleActive(id: string, isActive: boolean) {
     return prisma.user.update({ where: { id }, data: { isActive }, include });
   },

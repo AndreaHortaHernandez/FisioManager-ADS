@@ -12,6 +12,7 @@ import { AdminAppointments } from './pages/admin/AdminAppointments';
 import { AdminPatients } from './pages/admin/AdminPatients';
 import { AdminDoctors } from './pages/admin/AdminDoctors';
 import { AdminAssignments } from './pages/admin/AdminAssignments';
+import { AdminUsers } from './pages/admin/AdminUsers';
 
 // Auth
 import { LoginPage } from './pages/auth/LoginPage';
@@ -93,6 +94,7 @@ function App() {
           <Route path="pacientes" element={<AdminPatients />} />
           <Route path="doctores" element={<AdminDoctors />} />
           <Route path="asignaciones" element={<AdminAssignments />} />
+          <Route path="usuarios" element={<AdminUsers />} />
         </Route>
       </Routes>
     </BrowserRouter>

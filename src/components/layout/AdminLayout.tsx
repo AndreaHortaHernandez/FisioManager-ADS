@@ -15,6 +15,7 @@ export function AdminLayout() {
     { label: 'Pacientes', path: '/admin/pacientes', icon: Users },
     { label: 'Doctores', path: '/admin/doctores', icon: Stethoscope },
     { label: 'Asignaciones', path: '/admin/asignaciones', icon: UserPlus },
+    { label: 'Usuarios', path: '/admin/usuarios', icon: Users },
   ];
 
   return (

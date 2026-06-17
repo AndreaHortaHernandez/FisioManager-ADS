@@ -9,6 +9,8 @@ import { adminRouter } from './admin.routes';
 import { routineAssignmentRouter } from './routineAssignment.routes';
 import { sessionRouter } from './session.routes';
 import { meRouter } from './me.routes';
+import { usuariosRouter } from './usuarios.routes';
+import { asignacionesRouter } from './asignaciones.routes';
 
 const router = Router();
 
@@ -22,5 +24,7 @@ router.use('/appointments', appointmentRouter);
 router.use('/admin', adminRouter);
 router.use('/sesiones', sessionRouter);
 router.use('/me', meRouter);
+router.use('/usuarios', usuariosRouter);
+router.use('/asignaciones', asignacionesRouter);
 
 export { router };
