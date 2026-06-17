@@ -1,6 +1,6 @@
 # FisioManager
 
-Aplicación web para la gestión de sesiones de fisioterapia, desarrollada como proyecto escolar del 6to semestre de Análisis y Desarrollo de Software en el IPN.
+Aplicación web para la gestión de sesiones de fisioterapia, desarrollada como proyecto para la asignatura de Análisis y Desarrollo de Software en ESCOM-IPN.
 
 Permite a administradores, terapeutas y pacientes gestionar citas, rutinas de ejercicio y seguimiento del progreso terapéutico desde una sola plataforma.
 
