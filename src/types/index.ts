@@ -100,6 +100,7 @@ export interface Appointment {
   therapistId: string;
   dateTime: string;
   status: AppointmentStatus;
+  room?: string;
   notes?: string;
   patient: { id: string; name: string; email: string; phone?: string; avatarUrl?: string };
   therapist: { id: string; name: string; email: string };

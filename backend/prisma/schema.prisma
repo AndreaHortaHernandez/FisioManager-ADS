@@ -12,8 +12,9 @@ model User {
   name      String
   email     String   @unique
   password  String
-  role      String   // PATIENT | THERAPIST | ADMIN
+  role      String // PATIENT | THERAPIST | ADMIN
   isActive  Boolean  @default(true)
+  emailVerified Boolean @default(true) // false solo para cuentas auto-registradas pendientes de verificar
   avatarUrl String?
   phone     String?
   createdAt DateTime @default(now())
@@ -24,10 +25,13 @@ model User {
   routines              Routine[]
   feedbacks             Feedback[]
   sessions              Session[]
-  patientAppointments   Appointment[]         @relation("AppointmentPatient")
-  therapistAppointments Appointment[]         @relation("AppointmentTherapist")
-  patientAssignments    RoutineAssignment[]   @relation("AssignmentPatient")
-  therapistAssignments  RoutineAssignment[]   @relation("AssignmentTherapist")
+  patientAppointments   Appointment[]           @relation("AppointmentPatient")
+  therapistAppointments Appointment[]           @relation("AppointmentTherapist")
+  patientAssignments    RoutineAssignment[]     @relation("AssignmentPatient")
+  therapistAssignments  RoutineAssignment[]     @relation("AssignmentTherapist")
+  clinicalHistory       ClinicalHistory?
+  clinicalNotes         ClinicalNote[]          @relation("NoteAuthor")
+  availability          TherapistAvailability[] @relation("TherapistAvailability")
 }
 
 model PatientProfile {
@@ -51,8 +55,8 @@ model ActivityTemplate {
   id          String   @id @default(cuid())
   title       String
   description String
-  type        String   // PHYSICAL | BREATHING
-  bodyPart    String?  // KNEE | BACK | SHOULDER | NECK | ARM | HIP | ANKLE | OTHER (solo para PHYSICAL)
+  type        String // PHYSICAL | BREATHING
+  bodyPart    String? // KNEE | BACK | SHOULDER | NECK | ARM | HIP | ANKLE | OTHER (solo para PHYSICAL)
   videoUrl    String?
   imageUrl    String?
   createdAt   DateTime @default(now())
@@ -60,9 +64,9 @@ model ActivityTemplate {
 
 model Routine {
   id           String    @id @default(cuid())
-  patientId    String?   // null = template en la biblioteca
+  patientId    String? // null = template en la biblioteca
   title        String
-  type         String    // TREATMENT | RELAXATION
+  type         String // TREATMENT | RELAXATION
   completed    Boolean   @default(false)
   assignedDate DateTime?
   createdAt    DateTime  @default(now())
@@ -82,7 +86,7 @@ model RoutineAssignment {
   therapistId String
   startDate   DateTime
   endDate     DateTime?
-  frequency   String    // DAILY | EVERY_OTHER_DAY | WEEKLY
+  frequency   String // DAILY | EVERY_OTHER_DAY | WEEKLY
   status      String    @default("ACTIVE") // ACTIVE | PAUSED | CANCELLED
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -101,7 +105,7 @@ model Activity {
   durationMinutes Int
   restSeconds     Int?
   repetitions     Int
-  type            String  // PHYSICAL | BREATHING
+  type            String // PHYSICAL | BREATHING
   order           Int
   videoUrl        String?
 
@@ -113,7 +117,7 @@ model Feedback {
   routineId      String?
   patientId      String
   painLevel      Int
-  emotionalState String   // GREAT | GOOD | OK | BAD | TERRIBLE
+  emotionalState String // GREAT | GOOD | OK | BAD | TERRIBLE
   audioRecordUrl String?
   transcript     String?
   aiSummary      String?
@@ -155,10 +159,71 @@ model Appointment {
   therapistId String
   dateTime    DateTime
   status      String   @default("SCHEDULED") // SCHEDULED | CANCELLED | COMPLETED
+  room        String? // sala
   notes       String?
+  reminded24h Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   patient   User @relation("AppointmentPatient", fields: [patientId], references: [id])
   therapist User @relation("AppointmentTherapist", fields: [therapistId], references: [id])
+}
+
+// ── Historial Clínico ──────────────────────────────────────────────────────
+model ClinicalHistory {
+  id         String   @id @default(cuid())
+  patientId  String   @unique
+  bloodType  String? // tipo de sangre
+  allergies  String? // alergias
+  background String? // antecedentes
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  patient   User           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  diagnoses Diagnosis[]
+  notes     ClinicalNote[]
+}
+
+model Diagnosis {
+  id          String   @id @default(cuid())
+  historyId   String
+  cie10Code   String // código CIE-10
+  description String
+  status      String   @default("ACTIVE") // ACTIVE | RESOLVED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  history ClinicalHistory @relation(fields: [historyId], references: [id], onDelete: Cascade)
+}
+
+model ClinicalNote {
+  id        String   @id @default(cuid())
+  historyId String
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  history ClinicalHistory @relation(fields: [historyId], references: [id], onDelete: Cascade)
+  author  User            @relation("NoteAuthor", fields: [authorId], references: [id])
+}
+
+// ── Disponibilidad del terapeuta (HorarioDisponible) ──────────────────────
+model TherapistAvailability {
+  id          String @id @default(cuid())
+  therapistId String
+  dayOfWeek   Int // 0=Dom ... 6=Sáb
+  startTime   String // "09:00"
+  endTime     String // "17:00"
+
+  therapist User @relation("TherapistAvailability", fields: [therapistId], references: [id], onDelete: Cascade)
+
+  @@unique([therapistId, dayOfWeek])
+}
+
+// ── Tokens revocados (logout) ─────────────────────────────────────────────
+model RevokedToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
 }

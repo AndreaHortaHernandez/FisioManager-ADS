@@ -16,6 +16,8 @@ function flatten(u: ApiPatient): Patient {
     id: u.id,
     name: u.name,
     role: 'PATIENT',
+    email: u.email,
+    isActive: true,
     avatarUrl: u.avatarUrl,
     age: u.patientProfile?.age ?? 0,
     condition: u.patientProfile?.condition ?? '',

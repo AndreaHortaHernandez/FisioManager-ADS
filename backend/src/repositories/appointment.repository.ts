@@ -51,15 +51,33 @@ export const appointmentRepository = {
     return prisma.appointment.findUnique({ where: { id }, include });
   },
 
-  create(data: { patientId: string; therapistId: string; dateTime: Date; notes?: string }) {
+  create(data: { patientId: string; therapistId: string; dateTime: Date; room?: string; notes?: string }) {
     return prisma.appointment.create({ data, include });
   },
 
-  update(id: string, data: { dateTime?: Date; status?: string; notes?: string }) {
+  update(id: string, data: { dateTime?: Date; status?: string; room?: string; notes?: string }) {
     return prisma.appointment.update({ where: { id }, data, include });
   },
 
   delete(id: string) {
     return prisma.appointment.delete({ where: { id } });
+  },
+
+  // Citas SCHEDULED en las próximas 24h que aún no recibieron recordatorio.
+  findDueForReminder() {
+    const now = new Date();
+    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    return prisma.appointment.findMany({
+      where: {
+        status: 'SCHEDULED',
+        reminded24h: false,
+        dateTime: { gte: now, lte: in24h },
+      },
+      include,
+    });
+  },
+
+  markReminded(id: string) {
+    return prisma.appointment.update({ where: { id }, data: { reminded24h: true } });
   },
 };

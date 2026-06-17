@@ -1,27 +1,42 @@
-import { useState, FormEvent } from 'react';
+import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
+type Mode = 'login' | 'signup';
+
 export function LoginPage() {
   const navigate = useNavigate();
   const login = useStore(state => state.login);
+  const signup = useStore(state => state.signup);
 
+  const [mode, setMode] = useState<Mode>('login');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setError('');
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      if (mode === 'login') {
+        await login(email, password);
+      } else {
+        await signup(name, email, password);
+      }
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      setError(err instanceof Error ? err.message : 'Ocurrió un error');
     } finally {
       setLoading(false);
     }
@@ -38,10 +53,38 @@ export function LoginPage() {
             <div className="w-7 h-7 rounded-full bg-white opacity-80" />
           </div>
           <h1 className="text-3xl font-display font-bold text-on-surface">FisioManager</h1>
-          <p className="text-on-surface-variant mt-1 font-body">Inicia sesión para continuar</p>
+          <p className="text-on-surface-variant mt-1 font-body">
+            {mode === 'login' ? 'Inicia sesión para continuar' : 'Crea tu cuenta de paciente'}
+          </p>
+        </div>
+
+        {/* Selector login / crear cuenta */}
+        <div className="flex gap-1 bg-surface-container-low rounded-2xl p-1 mb-6">
+          {(['login', 'signup'] as Mode[]).map(m => (
+            <button
+              key={m}
+              type="button"
+              onClick={() => switchMode(m)}
+              className={`flex-1 py-2 rounded-xl text-sm font-bold transition-colors ${
+                mode === m ? 'bg-primary text-white shadow-ambient' : 'text-on-surface-variant hover:bg-surface-variant'
+              }`}
+            >
+              {m === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
+            </button>
+          ))}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {mode === 'signup' && (
+            <Input
+              label="Nombre completo"
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Tu nombre"
+              required
+            />
+          )}
           <Input
             label="Correo electrónico"
             type="email"
@@ -66,16 +109,20 @@ export function LoginPage() {
           )}
 
           <Button type="submit" className="w-full mt-2" disabled={loading}>
-            {loading ? 'Ingresando...' : 'Iniciar sesión'}
+            {loading
+              ? (mode === 'login' ? 'Ingresando...' : 'Creando cuenta...')
+              : (mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta')}
           </Button>
         </form>
 
-        <div className="mt-8 p-4 bg-surface-container rounded-xl border-ghost text-xs text-on-surface-variant font-body space-y-1">
-          <p className="font-bold text-on-surface mb-2">Cuentas de prueba:</p>
-          <p>👩‍⚕️ sarah@fisiomanager.com / therapist123</p>
-          <p>🧑 michael@fisiomanager.com / patient123</p>
-          <p>👩 elena@fisiomanager.com / patient123</p>
-        </div>
+        {mode === 'login' && (
+          <div className="mt-8 p-4 bg-surface-container rounded-xl border-ghost text-xs text-on-surface-variant font-body space-y-1">
+            <p className="font-bold text-on-surface mb-2">Cuentas de prueba:</p>
+            <p>👩‍⚕️ sarah@fisiomanager.com / therapist123</p>
+            <p>🧑 michael@fisiomanager.com / patient123</p>
+            <p>👩 elena@fisiomanager.com / patient123</p>
+          </div>
+        )}
       </div>
     </div>
   );

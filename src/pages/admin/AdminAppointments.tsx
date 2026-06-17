@@ -16,7 +16,7 @@ const statusColor: Record<string, string> = {
   COMPLETED: 'bg-surface-container text-on-surface-variant',
 };
 
-type PatientOpt = { id: string; name: string; email: string };
+type PatientOpt = { id: string; name: string; email?: string };
 
 function toDatetimeLocal(iso: string) {
   const d = new Date(iso);
@@ -34,7 +34,7 @@ export function AdminAppointments() {
   const [filterStatus, setFilterStatus] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editAppt, setEditAppt] = useState<Appointment | null>(null);
-  const [form, setForm] = useState({ patientId: '', therapistId: '', dateTime: '', notes: '' });
+  const [form, setForm] = useState({ patientId: '', therapistId: '', dateTime: '', room: '', notes: '' });
   const [reminderMsg, setReminderMsg] = useState<Record<string, string>>({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -67,7 +67,7 @@ export function AdminAppointments() {
 
   function openCreate() {
     setEditAppt(null);
-    setForm({ patientId: '', therapistId: '', dateTime: '', notes: '' });
+    setForm({ patientId: '', therapistId: '', dateTime: '', room: '', notes: '' });
     setError('');
     setShowForm(true);
   }
@@ -78,6 +78,7 @@ export function AdminAppointments() {
       patientId: appt.patientId,
       therapistId: appt.therapistId,
       dateTime: toDatetimeLocal(appt.dateTime),
+      room: appt.room ?? '',
       notes: appt.notes ?? '',
     });
     setError('');
@@ -91,13 +92,13 @@ export function AdminAppointments() {
       const dateTimeISO = new Date(form.dateTime).toISOString();
       if (editAppt) {
         const updated = await appointmentsApi.update(editAppt.id, {
-          dateTime: dateTimeISO, notes: form.notes || undefined,
+          dateTime: dateTimeISO, room: form.room || undefined, notes: form.notes || undefined,
         });
         setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
       } else {
         const created = await appointmentsApi.create({
           patientId: form.patientId, therapistId: form.therapistId,
-          dateTime: dateTimeISO, notes: form.notes || undefined,
+          dateTime: dateTimeISO, room: form.room || undefined, notes: form.notes || undefined,
         });
         setAppointments(prev => [created, ...prev]);
       }
@@ -212,6 +213,12 @@ export function AdminAppointments() {
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
               </div>
               <div>
+                <label className="text-sm text-on-surface-variant mb-1 block">Sala (opcional)</label>
+                <input type="text" value={form.room} placeholder="Ej. Sala 1"
+                  onChange={e => setForm(f => ({ ...f, room: e.target.value }))}
+                  className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
+              </div>
+              <div>
                 <label className="text-sm text-on-surface-variant mb-1 block">Notas (opcional)</label>
                 <textarea rows={3} value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
@@ -265,6 +272,7 @@ export function AdminAppointments() {
                   <div className="flex gap-4 mt-1 text-sm text-on-surface-variant flex-wrap">
                     <span className="flex items-center gap-1"><User size={12} /> {appt.patient.name}</span>
                     <span className="flex items-center gap-1">{'🩺'} {appt.therapist.name}</span>
+                    {appt.room && <span className="flex items-center gap-1">{'📍'} {appt.room}</span>}
                   </div>
                   {appt.notes && <p className="text-xs text-on-surface-variant mt-1 italic">"{appt.notes}"</p>}
                 </div>

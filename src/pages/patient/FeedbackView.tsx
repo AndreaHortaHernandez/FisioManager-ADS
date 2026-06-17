@@ -32,7 +32,7 @@ export function FeedbackView() {
   const [painLevel, setPainLevel]           = useState(5);
   const [emotionalState, setEmotionalState] = useState<Feedback['emotionalState']>('GOOD');
   const [recordState, setRecordState]       = useState<RecordState>('IDLE');
-  const [audioBlob, setAudioBlob]           = useState<Blob | null>(null);
+  const [, setAudioBlob]                    = useState<Blob | null>(null);
   const [previewUrl, setPreviewUrl]         = useState<string | null>(null);
   const [transcript, setTranscript]         = useState('');
   const [aiSummary, setAiSummary]           = useState('');

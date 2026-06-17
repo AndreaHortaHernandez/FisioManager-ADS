@@ -45,6 +45,7 @@ export const mockPatients: Patient[] = [
     age: 45,
     condition: 'Post-Op Knee Replacement',
     therapistId: 't-1',
+    isActive: true,
     avatarUrl: 'https://i.pravatar.cc/150?u=michael',
   },
   {
@@ -54,6 +55,7 @@ export const mockPatients: Patient[] = [
     age: 32,
     condition: 'Chronic Lower Back Pain',
     therapistId: 't-1',
+    isActive: true,
     avatarUrl: 'https://i.pravatar.cc/150?u=elena',
   },
 ];

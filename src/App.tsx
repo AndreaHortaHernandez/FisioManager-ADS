@@ -34,12 +34,8 @@ import { RoutineLibrary } from './pages/therapist/RoutineLibrary';
 import { RoutineBuilder } from './pages/therapist/RoutineBuilder';
 import { ExerciseLibrary } from './pages/therapist/ExerciseLibrary';
 import { AnalyticsView } from './pages/therapist/AnalyticsView';
+import { SettingsView } from './pages/therapist/SettingsView';
 
-const Placeholder = ({ title }: { title: string }) => (
-  <div className="flex items-center justify-center p-12 text-center h-full">
-    <h2 className="text-2xl font-display text-on-surface-variant font-bold">{title} — Próximamente</h2>
-  </div>
-);
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useStore(state => state.isAuthenticated);
@@ -84,7 +80,7 @@ function App() {
           <Route path="routines/builder" element={<RoutineBuilder />} />
           <Route path="routines/builder/:id" element={<RoutineBuilder />} />
           <Route path="analytics" element={<AnalyticsView />} />
-          <Route path="settings" element={<Placeholder title="Configuración" />} />
+          <Route path="settings" element={<SettingsView />} />
         </Route>
 
         {/* Rutas de Administrador */}

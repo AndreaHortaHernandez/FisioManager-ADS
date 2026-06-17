@@ -5,8 +5,9 @@ import { promisify } from 'util';
 
 const execFileAsync = promisify(execFile);
 
-const OLLAMA_URL = 'http://localhost:11434/api/generate';
-const OLLAMA_MODEL = 'gemma4:e2b';
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL ?? 'http://localhost:11434';
+const OLLAMA_URL = `${OLLAMA_BASE_URL.replace(/\/$/, '')}/api/generate`;
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL ?? 'gemma4:e2b';
 
 function findFfmpegBinDir(): string | undefined {
   const localAppData = process.env.LOCALAPPDATA;

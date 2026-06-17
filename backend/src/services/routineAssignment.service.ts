@@ -1,5 +1,6 @@
 import { routineAssignmentRepository } from '../repositories/routineAssignment.repository';
 import { routineRepository } from '../repositories/routine.repository';
+import { notificationService } from './notification.service';
 import { AppError } from '../errors/AppError';
 
 export const routineAssignmentService = {
@@ -43,11 +44,18 @@ export const routineAssignmentService = {
     });
 
     // Crear el registro de asignación para seguimiento
-    return routineAssignmentRepository.create({
+    const assignment = await routineAssignmentRepository.create({
       ...data,
       startDate: new Date(data.startDate),
       endDate:   data.endDate ? new Date(data.endDate) : undefined,
     });
+
+    // Notifica al paciente de la nueva rutina — no bloquea la respuesta.
+    notificationService
+      .notifyRoutineAssigned(data.patientId, data.therapistId, template.title)
+      .catch(err => console.error('[Notif] Error al notificar asignación de rutina:', err));
+
+    return assignment;
   },
 
   async updateStatus(id: string, status: string, therapistId: string) {

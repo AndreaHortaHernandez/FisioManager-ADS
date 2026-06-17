@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { ArrowLeft, Activity, CheckCircle2, PlayCircle, Mic, Sparkles, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Activity, CheckCircle2, PlayCircle, Mic, Sparkles, AlertTriangle, LayoutDashboard, ClipboardList } from 'lucide-react';
 import type { Feedback } from '../../types';
+import { ClinicalHistorySection } from '../../components/ClinicalHistorySection';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
 
@@ -33,6 +35,7 @@ function PainBar({ value }: { value: number }) {
 export function PatientDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [mainTab, setMainTab] = useState<'resumen' | 'clinico'>('resumen');
 
   const patients = useStore(state => state.patients);
   const allRoutines = useStore(state => state.routines);
@@ -128,6 +131,29 @@ export function PatientDetail() {
         </div>
       )}
 
+      {/* Tabs principales */}
+      <div className="flex gap-1 bg-surface-container-low rounded-2xl p-1 w-fit">
+        <button
+          onClick={() => setMainTab('resumen')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+            mainTab === 'resumen' ? 'bg-primary text-white shadow-ambient' : 'text-on-surface-variant hover:bg-surface-variant'
+          }`}
+        >
+          <LayoutDashboard size={15} /> Resumen
+        </button>
+        <button
+          onClick={() => setMainTab('clinico')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+            mainTab === 'clinico' ? 'bg-primary text-white shadow-ambient' : 'text-on-surface-variant hover:bg-surface-variant'
+          }`}
+        >
+          <ClipboardList size={15} /> Historial Clínico
+        </button>
+      </div>
+
+      {mainTab === 'clinico' && <ClinicalHistorySection patientId={id!} />}
+
+      {mainTab === 'resumen' && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Routines column */}
         <div className="space-y-4">
@@ -243,6 +269,7 @@ export function PatientDetail() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

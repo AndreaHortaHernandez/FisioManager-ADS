@@ -12,11 +12,11 @@ export const appointmentsApi = {
     return api.get<Appointment[]>(`/appointments${qs ? `?${qs}` : ''}`);
   },
 
-  create(data: { patientId: string; therapistId: string; dateTime: string; notes?: string }) {
+  create(data: { patientId: string; therapistId: string; dateTime: string; room?: string; notes?: string }) {
     return api.post<Appointment>('/appointments', data);
   },
 
-  update(id: string, data: { dateTime?: string; status?: string; notes?: string }) {
+  update(id: string, data: { dateTime?: string; status?: string; room?: string; notes?: string }) {
     return api.patch<Appointment>(`/appointments/${id}`, data);
   },
 

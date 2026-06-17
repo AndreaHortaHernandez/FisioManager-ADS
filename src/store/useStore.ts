@@ -28,6 +28,8 @@ interface AppState {
 
   // Acciones de auth
   login: (email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string) => Promise<void>;
+  applySession: (token: string, user: AuthUser) => Promise<void>;
   logout: () => void;
 
   // Carga de datos
@@ -98,7 +100,26 @@ export const useStore = create<AppState>()(
         await get().loadData();
       },
 
+      signup: async (name, email, password) => {
+        const { token, user } = await authApi.signup(name, email, password);
+        await get().applySession(token, user);
+      },
+
+      applySession: async (token, user) => {
+        setAuthToken(token);
+        set({
+          isAuthenticated: true,
+          token,
+          authUser: user,
+          role: user.role,
+          currentUser: user.id,
+        });
+        await get().loadData();
+      },
+
       logout: () => {
+        // Invalida el token en el servidor (no bloquea el cierre de sesión local).
+        authApi.logout().catch(() => { /* el token podría ya haber expirado */ });
         setAuthToken(null);
         set({
           isAuthenticated: false,

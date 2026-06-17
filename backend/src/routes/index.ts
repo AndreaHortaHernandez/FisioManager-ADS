@@ -11,6 +11,8 @@ import { sessionRouter } from './session.routes';
 import { meRouter } from './me.routes';
 import { usuariosRouter } from './usuarios.routes';
 import { asignacionesRouter } from './asignaciones.routes';
+import { pacientesRouter, historialRouter, diagnosticosRouter } from './clinicalHistory.routes';
+import { availabilityRouter } from './availability.routes';
 
 const router = Router();
 
@@ -26,5 +28,10 @@ router.use('/sesiones', sessionRouter);
 router.use('/me', meRouter);
 router.use('/usuarios', usuariosRouter);
 router.use('/asignaciones', asignacionesRouter);
+router.use('/citas', appointmentRouter);
+router.use('/pacientes', pacientesRouter);
+router.use('/historial', historialRouter);
+router.use('/diagnosticos', diagnosticosRouter);
+router.use('/disponibilidad', availabilityRouter);
 
 export { router };

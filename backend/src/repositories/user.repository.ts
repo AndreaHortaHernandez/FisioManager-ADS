@@ -37,11 +37,20 @@ export const userRepository = {
     });
   },
 
+  updatePassword(id: string, password: string) {
+    return prisma.user.update({ where: { id }, data: { password }, include });
+  },
+
+  setEmailVerified(id: string) {
+    return prisma.user.update({ where: { id }, data: { emailVerified: true }, include });
+  },
+
   create(data: {
     name: string;
     email: string;
     password: string;
     role: string;
+    emailVerified?: boolean;
     avatarUrl?: string;
     phone?: string;
     patientProfile?: { age: number; condition: string; therapistId: string };

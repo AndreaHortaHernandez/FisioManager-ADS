@@ -4,7 +4,7 @@ import { Users, Activity, TrendingDown, CheckCircle2 } from 'lucide-react';
 import type { Feedback } from '../../types';
 import {
   LineChart, Line, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 
 const EMOTION_MAP: Record<Feedback['emotionalState'], string> = {
@@ -104,7 +104,7 @@ export function AnalyticsView() {
                 <YAxis domain={[0, 10]} tick={{ fontSize: 11 }} />
                 <Tooltip
                   contentStyle={{ borderRadius: 12, fontSize: 12 }}
-                  formatter={(v: number) => [`${v}/10`, 'Dolor']}
+                  formatter={(v) => [`${v}/10`, 'Dolor']}
                 />
                 <Line
                   type="monotone"
@@ -135,7 +135,7 @@ export function AnalyticsView() {
                 <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} tickFormatter={v => `${v}%`} />
                 <Tooltip
                   contentStyle={{ borderRadius: 12, fontSize: 12 }}
-                  formatter={(v: number) => [`${v}%`, 'Adherencia']}
+                  formatter={(v) => [`${v}%`, 'Adherencia']}
                 />
                 <Bar dataKey="adherencia" fill="#81c784" radius={[4, 4, 0, 0]} />
               </BarChart>

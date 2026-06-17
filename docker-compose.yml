@@ -1,0 +1,76 @@
+services:
+  # ── Ollama (LLM para resúmenes clínicos e insights) ──────────────────────
+  ollama:
+    image: ollama/ollama:latest
+    container_name: fisio-ollama
+    volumes:
+      - ollama-models:/root/.ollama
+    # No se expone 11434 al host: el backend lo alcanza por la red interna
+    # del compose (ollama:11434). Evita conflicto con un Ollama del host.
+    expose:
+      - "11434"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "ollama list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  # Descarga el modelo dentro del volumen de Ollama y termina.
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: fisio-ollama-pull
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - OLLAMA_HOST=ollama:11434
+    entrypoint: ["/bin/sh", "-c", "ollama pull ${OLLAMA_MODEL:-gemma4:e2b}"]
+    restart: "no"
+
+  # ── Backend (API Express + Prisma + Whisper) ─────────────────────────────
+  backend:
+    build:
+      context: ./backend
+    container_name: fisio-backend
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=file:/data/fisio.db
+      - JWT_SECRET=${JWT_SECRET:-cambia-esto-por-un-secreto-seguro-en-produccion}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma4:e2b}
+      - CORS_ORIGIN=http://localhost:8080
+      # SMTP real (si EMAIL_HOST está vacío se usa Ethereal de prueba).
+      - EMAIL_HOST=${EMAIL_HOST:-}
+      - EMAIL_PORT=${EMAIL_PORT:-587}
+      - EMAIL_USER=${EMAIL_USER:-}
+      - EMAIL_PASS=${EMAIL_PASS:-}
+      - EMAIL_FROM=${EMAIL_FROM:-FisioManager <noreply@fisiomanager.com>}
+    volumes:
+      - fisio-db:/data
+      - fisio-uploads:/app/uploads
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  # ── Frontend (Vite build servido por nginx + reverse-proxy) ──────────────
+  frontend:
+    build:
+      context: .
+      args:
+        VITE_API_URL: /api
+    container_name: fisio-frontend
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+volumes:
+  ollama-models:
+  fisio-db:
+  fisio-uploads:

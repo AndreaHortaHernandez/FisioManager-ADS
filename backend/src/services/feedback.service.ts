@@ -1,4 +1,5 @@
 import { feedbackRepository } from '../repositories/feedback.repository';
+import { notificationService } from './notification.service';
 import { AppError } from '../errors/AppError';
 
 export const feedbackService = {
@@ -37,6 +38,13 @@ export const feedbackService = {
     if (data.painLevel < 1 || data.painLevel > 10) {
       throw new AppError('El nivel de dolor debe estar entre 1 y 10', 422);
     }
-    return feedbackRepository.create(data);
+    const feedback = await feedbackRepository.create(data);
+
+    // Alerta al terapeuta si el dolor es alto — no bloquea la respuesta.
+    notificationService
+      .alertHighPain(data.patientId, data.painLevel, data.emotionalState)
+      .catch(err => console.error('[Notif] Error en alerta de dolor alto:', err));
+
+    return feedback;
   },
 };

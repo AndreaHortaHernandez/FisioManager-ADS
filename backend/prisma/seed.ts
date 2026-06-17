@@ -249,6 +249,54 @@ async function main() {
   });
   console.log('📅 Citas de ejemplo creadas');
 
+  // ── Disponibilidad del terapeuta (HorarioDisponible) ─────────────
+  await prisma.therapistAvailability.deleteMany({ where: { therapistId: therapist.id } });
+  await prisma.therapistAvailability.createMany({
+    data: [
+      { therapistId: therapist.id, dayOfWeek: 1, startTime: '08:00', endTime: '18:00' },
+      { therapistId: therapist.id, dayOfWeek: 2, startTime: '08:00', endTime: '18:00' },
+      { therapistId: therapist.id, dayOfWeek: 3, startTime: '08:00', endTime: '18:00' },
+      { therapistId: therapist.id, dayOfWeek: 4, startTime: '08:00', endTime: '18:00' },
+      { therapistId: therapist.id, dayOfWeek: 5, startTime: '08:00', endTime: '18:00' },
+      { therapistId: therapist.id, dayOfWeek: 6, startTime: '09:00', endTime: '13:00' },
+    ],
+  });
+  console.log('🗓️  Disponibilidad del terapeuta creada (Lun-Sáb)');
+
+  // ── Historial clínico de ejemplo ─────────────────────────────────
+  const history = await prisma.clinicalHistory.upsert({
+    where: { patientId: michael.id },
+    update: {},
+    create: {
+      patientId: michael.id,
+      bloodType: 'O+',
+      allergies: 'Ninguna conocida',
+      background: 'Reemplazo total de rodilla derecha (2025)',
+    },
+  });
+  await prisma.diagnosis.upsert({
+    where: { id: 'dx-1' },
+    update: {},
+    create: {
+      id: 'dx-1',
+      historyId: history.id,
+      cie10Code: 'M17.1',
+      description: 'Gonartrosis primaria de rodilla',
+      status: 'ACTIVE',
+    },
+  });
+  await prisma.clinicalNote.upsert({
+    where: { id: 'note-1' },
+    update: {},
+    create: {
+      id: 'note-1',
+      historyId: history.id,
+      authorId: therapist.id,
+      content: 'Paciente con buena adherencia al tratamiento. Continuar fortalecimiento de cuádriceps.',
+    },
+  });
+  console.log('🩺 Historial clínico de ejemplo creado');
+
   console.log('\n✅ Seed completado.\n');
   console.log('Cuentas de prueba:');
   console.log('  Admin      → admin@fisiomanager.com   / admin123');

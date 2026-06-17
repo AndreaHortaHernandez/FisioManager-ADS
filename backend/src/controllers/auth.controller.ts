@@ -23,3 +23,25 @@ export const getMe = catchAsync(async (req: Request, res: Response) => {
   const user = await authService.getProfile(req.user!.id);
   ok(res, user);
 });
+
+export const signup = catchAsync(async (req: Request, res: Response) => {
+  const { name, email, password } = req.body;
+  const result = await authService.signup({ name, email, password });
+  created(res, result);
+});
+
+export const logout = catchAsync(async (req: Request, res: Response) => {
+  const token = req.headers.authorization!.slice(7);
+  const result = await authService.logout(token);
+  ok(res, result);
+});
+
+export const recover = catchAsync(async (req: Request, res: Response) => {
+  const result = await authService.requestRecovery(req.body.email);
+  ok(res, result);
+});
+
+export const reset = catchAsync(async (req: Request, res: Response) => {
+  const result = await authService.resetPassword(req.body.token, req.body.password);
+  ok(res, result);
+});
