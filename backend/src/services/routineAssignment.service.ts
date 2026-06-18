@@ -2,6 +2,7 @@ import { routineAssignmentRepository } from '../repositories/routineAssignment.r
 import { routineRepository } from '../repositories/routine.repository';
 import { notificationService } from './notification.service';
 import { AppError } from '../errors/AppError';
+import { logger } from '../lib/logger';
 
 export const routineAssignmentService = {
   getAll(therapistId: string) {
@@ -12,19 +13,23 @@ export const routineAssignmentService = {
     return routineAssignmentRepository.findByPatient(patientId);
   },
 
+  getByPhase(phaseId: string) {
+    return routineAssignmentRepository.findByPhase(phaseId);
+  },
+
   async create(data: {
     routineId: string;
     patientId: string;
     therapistId: string;
+    phaseId?: string;
     startDate: string;
     endDate?: string;
     frequency: string;
   }) {
-    // Verificar que la rutina template existe
+
     const template = await routineRepository.findById(data.routineId);
     if (!template) throw new AppError('Rutina no encontrada', 404);
 
-    // Crear copia de la rutina para el paciente (así la ve en su home)
     await routineRepository.create({
       title:       template.title,
       type:        template.type,
@@ -43,25 +48,23 @@ export const routineAssignmentService = {
       })),
     });
 
-    // Crear el registro de asignación para seguimiento
     const assignment = await routineAssignmentRepository.create({
       ...data,
       startDate: new Date(data.startDate),
       endDate:   data.endDate ? new Date(data.endDate) : undefined,
     });
 
-    // Notifica al paciente de la nueva rutina — no bloquea la respuesta.
     notificationService
       .notifyRoutineAssigned(data.patientId, data.therapistId, template.title)
-      .catch(err => console.error('[Notif] Error al notificar asignación de rutina:', err));
+      .catch(err => logger.error('routine_assigned_notification_failed', { patientId: data.patientId, error: err.message }));
 
     return assignment;
   },
 
-  async updateStatus(id: string, status: string, therapistId: string) {
+  async update(id: string, data: { status?: string; phaseId?: string | null }, therapistId: string) {
     const assignment = await routineAssignmentRepository.findById(id);
     if (!assignment) throw new AppError('Asignación no encontrada', 404);
     if (assignment.therapistId !== therapistId) throw new AppError('Sin permiso', 403);
-    return routineAssignmentRepository.updateStatus(id, status);
+    return routineAssignmentRepository.update(id, data);
   },
 };

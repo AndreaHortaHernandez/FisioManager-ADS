@@ -100,7 +100,7 @@ export const mockRoutines: Routine[] = [
   },
   {
     id: 'r-2',
-    patientId: null, // Template
+    patientId: null, 
     title: 'General Back Relaxation',
     type: 'RELAXATION',
     completed: false,

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, User, Mail, Phone, ToggleLeft, ToggleRight } from 'lucide-react';
 import { adminApi } from '../../services/admin.api';
 import type { Therapist } from '../../types';
+import { resolveUploadUrl } from '../../utils/url';
 
 type PatientRow = {
   id: string; name: string; email: string; phone?: string; avatarUrl?: string;
@@ -136,8 +137,8 @@ export function AdminPatients() {
               <tr key={p.id} className="border-b border-surface-container-high last:border-0 hover:bg-surface transition-colors">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    {p.avatarUrl
-                      ? <img src={p.avatarUrl} className="w-9 h-9 rounded-full object-cover" alt="" />
+                    {resolveUploadUrl(p.avatarUrl)
+                      ? <img src={resolveUploadUrl(p.avatarUrl)} className="w-9 h-9 rounded-full object-cover" alt="" />
                       : <div className="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center"><User size={16} className="text-primary" /></div>
                     }
                     <span className="font-medium">{p.name}</span>

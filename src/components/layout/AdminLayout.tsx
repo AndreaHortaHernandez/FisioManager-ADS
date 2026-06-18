@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Users, UserPlus, Stethoscope, LogOut } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, UserPlus, Stethoscope, LogOut, DoorOpen } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useStore } from '../../store/useStore';
 
@@ -14,6 +14,7 @@ export function AdminLayout() {
     { label: 'Citas', path: '/admin/citas', icon: Calendar },
     { label: 'Pacientes', path: '/admin/pacientes', icon: Users },
     { label: 'Doctores', path: '/admin/doctores', icon: Stethoscope },
+    { label: 'Salas', path: '/admin/salas', icon: DoorOpen },
     { label: 'Asignaciones', path: '/admin/asignaciones', icon: UserPlus },
     { label: 'Usuarios', path: '/admin/usuarios', icon: Users },
   ];

@@ -5,7 +5,6 @@ import App from './App.tsx'
 import { useStore } from './store/useStore'
 import { setAuthToken } from './services/api'
 
-// Restaurar token al cargar la app si hay sesión persistida
 const { token, isAuthenticated, loadData } = useStore.getState()
 if (isAuthenticated && token) {
   setAuthToken(token)

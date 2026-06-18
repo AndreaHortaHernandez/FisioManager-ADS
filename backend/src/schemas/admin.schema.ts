@@ -29,3 +29,18 @@ export const createAssignmentSchema = z.object({
   patientId: z.string().min(1),
   therapistId: z.string().min(1),
 });
+
+export const updateUserSchema = z
+  .object({
+    name:         z.string().min(2).optional(),
+    phone:        z.string().optional(),
+    avatarUrl:    z.string().url().optional(),
+
+    age:          z.number().int().min(1).max(120).optional(),
+    condition:    z.string().min(2).optional(),
+    therapistId:  z.string().min(1).optional(),
+
+    cedula:       z.string().optional(),
+    especialidad: z.string().optional(),
+  })
+  .refine(d => Object.keys(d).length > 0, { message: 'No hay campos para actualizar' });

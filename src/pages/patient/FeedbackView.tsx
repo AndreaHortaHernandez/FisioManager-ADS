@@ -19,11 +19,14 @@ type RecordState = 'IDLE' | 'RECORDING' | 'PROCESSING' | 'DONE';
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
 export function FeedbackView() {
-  const navigate      = useNavigate();
-  const addFeedback   = useStore(state => state.addFeedback);
-  const currentUserId = useStore(state => state.currentUser);
-  const token         = useStore(state => state.token);
-  const routines      = useStore(state => state.routines);
+  const navigate        = useNavigate();
+  const addFeedback     = useStore(state => state.addFeedback);
+  const currentUserId   = useStore(state => state.currentUser);
+  const token           = useStore(state => state.token);
+  const routines        = useStore(state => state.routines);
+  const authUser        = useStore(state => state.authUser);
+  const giveAudioConsent = useStore(state => state.giveAudioConsent);
+  const [showConsent, setShowConsent] = useState(false);
 
   const lastCompleted = routines
     .filter(r => r.patientId === currentUserId && r.completed)
@@ -45,6 +48,10 @@ export function FeedbackView() {
   const chunksRef        = useRef<Blob[]>([]);
 
   const startRecording = async () => {
+    if (!authUser?.audioConsentAt) {
+      setShowConsent(true);
+      return;
+    }
     setMicError('');
     chunksRef.current = [];
     try {
@@ -66,6 +73,12 @@ export function FeedbackView() {
     } catch {
       setMicError('No se pudo acceder al micrófono. Verifica los permisos del navegador.');
     }
+  };
+
+  const acceptConsentAndRecord = async () => {
+    await giveAudioConsent();
+    setShowConsent(false);
+    startRecording();
   };
 
   const stopRecording = () => {
@@ -90,7 +103,7 @@ export function FeedbackView() {
         setAiSummary(json.data.aiSummary ?? '');
       }
     } catch {
-      // Audio guardado localmente pero sin IA — no bloqueante
+
     } finally {
       setRecordState('DONE');
     }
@@ -135,7 +148,7 @@ export function FeedbackView() {
         <p className="text-xs text-primary font-bold">{lastCompleted.title}</p>
       </header>
 
-      {/* Estado emocional */}
+      {}
       <Card className="space-y-4">
         <h2 className="text-lg font-display font-bold">¿Cómo te sientes?</h2>
         <div className="flex justify-between">
@@ -154,7 +167,7 @@ export function FeedbackView() {
         </div>
       </Card>
 
-      {/* Nivel de dolor */}
+      {}
       <Card className="space-y-4">
         <h2 className="text-lg font-display font-bold">Nivel de Dolor</h2>
         <p className="text-sm text-on-surface-variant">Del 1 al 10, ¿cuánto dolor sentiste?</p>
@@ -173,7 +186,7 @@ export function FeedbackView() {
         </div>
       </Card>
 
-      {/* Nota de voz */}
+      {}
       <Card level={2} className="space-y-4">
         <div>
           <h2 className="text-lg font-display font-bold">Nota de voz</h2>
@@ -216,12 +229,12 @@ export function FeedbackView() {
           </p>
         </div>
 
-        {/* Preview del audio */}
+        {}
         {previewUrl && recordState === 'DONE' && (
           <audio controls src={previewUrl} className="w-full rounded-xl" />
         )}
 
-        {/* Resultado de IA */}
+        {}
         {recordState === 'DONE' && (transcript || aiSummary) && (
           <div className="space-y-2">
             {transcript && (
@@ -276,6 +289,25 @@ export function FeedbackView() {
       >
         {loading ? 'Enviando...' : 'Enviar Feedback'} <ArrowRight size={20} />
       </Button>
+
+      {showConsent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-sm space-y-4">
+            <h2 className="text-lg font-display font-bold">Consentimiento de grabación</h2>
+            <p className="text-sm text-on-surface-variant">
+              Para registrar tu feedback por voz necesitamos tu consentimiento para grabar el audio y procesarlo
+              con inteligencia artificial (transcripción y resumen clínico). Puedes seguir usando la app sin grabar audio.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowConsent(false)}
+                className="flex-1 py-2.5 rounded-xl border border-surface-container-high text-sm hover:bg-surface-container transition-colors">
+                Cancelar
+              </button>
+              <Button onClick={acceptConsentAndRecord} className="flex-1">Aceptar y grabar</Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

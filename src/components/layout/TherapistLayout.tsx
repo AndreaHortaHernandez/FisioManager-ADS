@@ -20,7 +20,7 @@ export function TherapistLayout() {
 
   return (
     <div className="min-h-screen bg-background flex text-on-surface">
-      {/* Sidebar Navigation */}
+      {}
       <aside className="w-64 bg-surface-container-lowest border-r border-surface-container-high flex flex-col pt-8 pb-4">
         <div className="px-8 mb-12">
           <h1 className="text-xl font-display font-bold text-primary flex items-center gap-2">
@@ -35,7 +35,7 @@ export function TherapistLayout() {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = location.pathname === item.path || (item.path !== '/therapist' && location.pathname.startsWith(item.path));
-            
+
             return (
               <button
                 key={item.path}
@@ -65,7 +65,7 @@ export function TherapistLayout() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
+      {}
       <main className="flex-1 overflow-y-auto bg-surface-bright relative">
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary-container rounded-full mix-blend-multiply filter blur-[100px] opacity-5 pointer-events-none" />
         <div className="p-10 max-w-7xl mx-auto relative z-10">

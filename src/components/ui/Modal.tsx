@@ -24,16 +24,16 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 animate-fade-in">
-      {/* Backdrop */}
+      {}
       <div 
         className="absolute inset-0 bg-surface/80 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      
-      {/* Modal Dialog */}
+
+      {}
       <div className="relative bg-surface-container-lowest rounded-2xl w-full max-w-lg shadow-ambient border-ghost overflow-hidden flex flex-col max-h-[90vh]">
-        
-        {/* Header */}
+
+        {}
         <div className="flex items-center justify-between p-6 border-b border-surface-container-high bg-surface">
           <h2 className="text-xl font-display font-bold text-on-surface">{title}</h2>
           <button 
@@ -44,7 +44,7 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
           </button>
         </div>
 
-        {/* Content */}
+        {}
         <div className="p-6 overflow-y-auto bg-surface-bright flex-1">
           {children}
         </div>

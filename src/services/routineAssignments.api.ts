@@ -11,6 +11,7 @@ export const routineAssignmentsApi = {
   create: (data: {
     routineId:  string;
     patientId:  string;
+    phaseId?:   string;
     startDate:  string;
     endDate?:   string;
     frequency:  AssignmentFrequency;
@@ -18,4 +19,7 @@ export const routineAssignmentsApi = {
 
   updateStatus: (id: string, status: AssignmentStatus) =>
     api.patch<RoutineAssignment>(`/routine-assignments/${id}`, { status }),
+
+  updatePhase: (id: string, phaseId: string | null) =>
+    api.patch<RoutineAssignment>(`/routine-assignments/${id}`, { phaseId }),
 };

@@ -41,8 +41,35 @@ export const userRepository = {
     return prisma.user.update({ where: { id }, data: { password }, include });
   },
 
+  setAudioConsent(id: string, when: Date) {
+    return prisma.user.update({ where: { id }, data: { audioConsentAt: when }, include });
+  },
+
   setEmailVerified(id: string) {
     return prisma.user.update({ where: { id }, data: { emailVerified: true }, include });
+  },
+
+  updateProfile(id: string, data: { phone?: string; avatarUrl?: string }) {
+    return prisma.user.update({ where: { id }, data, include });
+  },
+
+  updateUser(id: string, data: {
+    name?: string;
+    phone?: string;
+    avatarUrl?: string;
+    patientProfile?: { age?: number; condition?: string; therapistId?: string };
+    therapistProfile?: { cedula?: string; especialidad?: string };
+  }) {
+    const { patientProfile, therapistProfile, ...userData } = data;
+    return prisma.user.update({
+      where: { id },
+      data: {
+        ...userData,
+        ...(patientProfile   ? { patientProfile:   { update: patientProfile   } } : {}),
+        ...(therapistProfile ? { therapistProfile: { update: therapistProfile } } : {}),
+      },
+      include,
+    });
   },
 
   create(data: {

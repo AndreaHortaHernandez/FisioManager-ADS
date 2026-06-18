@@ -3,9 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { ArrowLeft, Activity, CheckCircle2, PlayCircle, Mic, Sparkles, AlertTriangle, LayoutDashboard, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Activity, CheckCircle2, PlayCircle, Mic, Sparkles, AlertTriangle, LayoutDashboard, ClipboardList, FileDown } from 'lucide-react';
 import type { Feedback } from '../../types';
 import { ClinicalHistorySection } from '../../components/ClinicalHistorySection';
+import { TreatmentPlanSection } from '../../components/TreatmentPlanSection';
+import { reportApi } from '../../services/report.api';
+import { resolveUploadUrl } from '../../utils/url';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
 
@@ -35,7 +38,17 @@ function PainBar({ value }: { value: number }) {
 export function PatientDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [mainTab, setMainTab] = useState<'resumen' | 'clinico'>('resumen');
+  const [mainTab, setMainTab] = useState<'resumen' | 'clinico' | 'plan'>('resumen');
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleDownloadReport() {
+    setDownloading(true);
+    try {
+      await reportApi.downloadPatientProgress(id!);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   const patients = useStore(state => state.patients);
   const allRoutines = useStore(state => state.routines);
@@ -77,18 +90,23 @@ export function PatientDetail() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header */}
+      {}
       <div>
-        <button
-          onClick={() => navigate('/therapist/patients')}
-          className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary mb-6 transition-colors"
-        >
-          <ArrowLeft size={16} /> Todos los pacientes
-        </button>
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => navigate('/therapist/patients')}
+            className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary transition-colors"
+          >
+            <ArrowLeft size={16} /> Todos los pacientes
+          </button>
+          <Button onClick={handleDownloadReport} disabled={downloading} className="flex items-center gap-2 py-2 px-3 text-sm">
+            <FileDown size={16} /> {downloading ? 'Generando…' : 'Descargar reporte PDF'}
+          </Button>
+        </div>
 
         <Card className="flex items-center gap-6 border-ghost">
           <img
-            src={patient.avatarUrl ?? `https://i.pravatar.cc/100?u=${patient.id}`}
+            src={resolveUploadUrl(patient.avatarUrl) ?? `https://i.pravatar.cc/100?u=${patient.id}`}
             alt={patient.name}
             className="w-20 h-20 rounded-2xl flex-shrink-0"
           />
@@ -131,7 +149,7 @@ export function PatientDetail() {
         </div>
       )}
 
-      {/* Tabs principales */}
+      {}
       <div className="flex gap-1 bg-surface-container-low rounded-2xl p-1 w-fit">
         <button
           onClick={() => setMainTab('resumen')}
@@ -149,13 +167,22 @@ export function PatientDetail() {
         >
           <ClipboardList size={15} /> Historial Clínico
         </button>
+        <button
+          onClick={() => setMainTab('plan')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
+            mainTab === 'plan' ? 'bg-primary text-white shadow-ambient' : 'text-on-surface-variant hover:bg-surface-variant'
+          }`}
+        >
+          <ClipboardList size={15} /> Plan de Tratamiento
+        </button>
       </div>
 
       {mainTab === 'clinico' && <ClinicalHistorySection patientId={id!} />}
+      {mainTab === 'plan' && <TreatmentPlanSection patientId={id!} />}
 
       {mainTab === 'resumen' && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Routines column */}
+        {}
         <div className="space-y-4">
           <h2 className="text-lg font-display font-bold">Rutinas Asignadas</h2>
 
@@ -204,7 +231,7 @@ export function PatientDetail() {
           )}
         </div>
 
-        {/* Feedback column */}
+        {}
         <div className="space-y-4">
           <h2 className="text-lg font-display font-bold">Historial de Feedback</h2>
 

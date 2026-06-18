@@ -19,15 +19,15 @@ export interface Patient extends User {
 
 export interface Activity {
   id: string;
-  templateId?: string; // Reference to the video template
+  templateId?: string; 
   title: string;
   description: string;
-  durationMinutes: number; // or seconds
+  durationMinutes: number; 
   restSeconds?: number;
   repetitions: number;
   type: 'PHYSICAL' | 'BREATHING';
   order: number;
-  videoUrl?: string; // the actual video
+  videoUrl?: string; 
 }
 
 export type BodyPart = 'KNEE' | 'BACK' | 'SHOULDER' | 'NECK' | 'ARM' | 'HIP' | 'ANKLE' | 'OTHER';
@@ -44,7 +44,7 @@ export interface ActivityTemplate {
 
 export interface Routine {
   id: string;
-  patientId: string | null; // null if it is a template in Library
+  patientId: string | null; 
   title: string;
   type: 'TREATMENT' | 'RELAXATION';
   activities: Activity[];
@@ -56,7 +56,7 @@ export interface Feedback {
   id: string;
   routineId: string;
   patientId: string;
-  painLevel: number; // 1-10
+  painLevel: number; 
   emotionalState: 'GREAT' | 'GOOD' | 'OK' | 'BAD' | 'TERRIBLE';
   audioRecordUrl?: string;
   aiSummary?: string;
@@ -83,6 +83,7 @@ export interface RoutineAssignment {
   routineId:   string;
   patientId:   string;
   therapistId: string;
+  phaseId?:    string | null;
   startDate:   string;
   endDate?:    string;
   frequency:   AssignmentFrequency;
@@ -92,7 +93,7 @@ export interface RoutineAssignment {
   patient?:    { id: string; name: string; avatarUrl?: string };
 }
 
-export type AppointmentStatus = 'SCHEDULED' | 'CANCELLED' | 'COMPLETED';
+export type AppointmentStatus = 'SCHEDULED' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
 
 export interface Appointment {
   id: string;
@@ -100,8 +101,11 @@ export interface Appointment {
   therapistId: string;
   dateTime: string;
   status: AppointmentStatus;
-  room?: string;
+  roomId?: string | null;
+  treatmentPlanId?: string | null;
   notes?: string;
   patient: { id: string; name: string; email: string; phone?: string; avatarUrl?: string };
   therapist: { id: string; name: string; email: string };
+  room?: { id: string; name: string } | null;
+  treatmentPlan?: { id: string; name: string } | null;
 }

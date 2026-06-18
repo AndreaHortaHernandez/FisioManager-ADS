@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { userRepository } from '../repositories/user.repository';
+import { gdprService } from '../services/gdpr.service';
 import { catchAsync } from '../utils/catchAsync';
 import { ok, created } from '../utils/response';
 import { AppError } from '../errors/AppError';
@@ -35,6 +36,36 @@ export const toggleUserActive = catchAsync(async (req: Request, res: Response) =
   ok(res, sanitize(updated));
 });
 
+export const updateUser = catchAsync(async (req: Request, res: Response) => {
+  const existing = await userRepository.findById(req.params.id);
+  if (!existing) throw new AppError('Usuario no encontrado', 404);
+
+  const { name, phone, avatarUrl, age, condition, therapistId, cedula, especialidad } = req.body;
+  const patientProfile =
+    existing.role === 'PATIENT' && (age !== undefined || condition !== undefined || therapistId !== undefined)
+      ? { age, condition, therapistId }
+      : undefined;
+  const therapistProfile =
+    existing.role === 'THERAPIST' && (cedula !== undefined || especialidad !== undefined)
+      ? { cedula, especialidad }
+      : undefined;
+
+  const updated = await userRepository.updateUser(req.params.id, {
+    name, phone, avatarUrl, patientProfile, therapistProfile,
+  });
+  ok(res, sanitize(updated));
+});
+
+export const uploadUserAvatar = catchAsync(async (req: Request, res: Response) => {
+  const existing = await userRepository.findById(req.params.id);
+  if (!existing) throw new AppError('Usuario no encontrado', 404);
+  if (!req.file) throw new AppError('No se recibió ningún archivo de imagen', 400);
+
+  const avatarUrl = `/uploads/${req.file.filename}`;
+  const updated = await userRepository.updateUser(req.params.id, { avatarUrl });
+  ok(res, sanitize(updated));
+});
+
 export const listPatients = catchAsync(async (_req: Request, res: Response) => {
   const patients = await userRepository.findAllByRole('PATIENT');
   ok(res, patients.map(sanitize));
@@ -65,6 +96,11 @@ export const assignPatient = catchAsync(async (req: Request, res: Response) => {
 export const listUsers = catchAsync(async (_req: Request, res: Response) => {
   const users = await userRepository.findAll();
   ok(res, users.map(sanitize));
+});
+
+export const deleteUserPermanently = catchAsync(async (req: Request, res: Response) => {
+  const result = await gdprService.deleteUser(req.params.id);
+  ok(res, result);
 });
 
 export const createAssignment = catchAsync(async (req: Request, res: Response) => {

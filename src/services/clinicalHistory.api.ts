@@ -11,6 +11,7 @@ export interface Diagnosis {
 export interface ClinicalNote {
   id: string;
   content: string;
+  isVisible: boolean;
   createdAt: string;
   author?: { id: string; name: string; role: string };
 }
@@ -46,6 +47,9 @@ export const clinicalHistoryApi = {
   updateDiagnosis: (id: string, data: { status?: 'ACTIVE' | 'RESOLVED'; description?: string; cie10Code?: string }) =>
     api.patch<Diagnosis>(`/diagnosticos/${id}`, data),
 
-  addNote: (historyId: string, content: string) =>
-    api.post<ClinicalNote>(`/historial/${historyId}/notas`, { content }),
+  addNote: (historyId: string, content: string, isVisible?: boolean) =>
+    api.post<ClinicalNote>(`/historial/${historyId}/notas`, { content, isVisible }),
+
+  updateNoteVisibility: (id: string, isVisible: boolean) =>
+    api.patch<ClinicalNote>(`/notas/${id}/visibilidad`, { isVisible }),
 };

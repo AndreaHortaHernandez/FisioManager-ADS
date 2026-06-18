@@ -1,23 +1,20 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useStore } from './store/useStore';
 
-// Layouts
 import { PatientLayout } from './components/layout/PatientLayout';
 import { TherapistLayout } from './components/layout/TherapistLayout';
 import { AdminLayout } from './components/layout/AdminLayout';
 
-// Admin pages
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { AdminAppointments } from './pages/admin/AdminAppointments';
 import { AdminPatients } from './pages/admin/AdminPatients';
 import { AdminDoctors } from './pages/admin/AdminDoctors';
 import { AdminAssignments } from './pages/admin/AdminAssignments';
 import { AdminUsers } from './pages/admin/AdminUsers';
+import { AdminRooms } from './pages/admin/AdminRooms';
 
-// Auth
 import { LoginPage } from './pages/auth/LoginPage';
 
-// Patient pages
 import { PatientHome } from './pages/patient/PatientHome';
 import { PatientRoutines } from './pages/patient/PatientRoutines';
 import { RoutinePlayer } from './pages/patient/RoutinePlayer';
@@ -25,8 +22,8 @@ import { ProgressView } from './pages/patient/ProgressView';
 import { WellnessView } from './pages/patient/WellnessView';
 import { FeedbackView } from './pages/patient/FeedbackView';
 import { WellnessCheckin } from './pages/patient/WellnessCheckin';
+import { PatientSettings } from './pages/patient/PatientSettings';
 
-// Therapist pages
 import { TherapistDashboard } from './pages/therapist/TherapistDashboard';
 import { PatientsList } from './pages/therapist/PatientsList';
 import { PatientDetail } from './pages/therapist/PatientDetail';
@@ -35,7 +32,6 @@ import { RoutineBuilder } from './pages/therapist/RoutineBuilder';
 import { ExerciseLibrary } from './pages/therapist/ExerciseLibrary';
 import { AnalyticsView } from './pages/therapist/AnalyticsView';
 import { SettingsView } from './pages/therapist/SettingsView';
-
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useStore(state => state.isAuthenticated);
@@ -59,7 +55,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={<AppRedirect />} />
 
-        {/* Rutas de Paciente */}
+        {}
         <Route path="/patient" element={<RequireAuth><PatientLayout /></RequireAuth>}>
           <Route index element={<PatientHome />} />
           <Route path="routines" element={<PatientRoutines />} />
@@ -68,9 +64,10 @@ function App() {
           <Route path="progress" element={<ProgressView />} />
           <Route path="feedback" element={<FeedbackView />} />
           <Route path="wellness-checkin" element={<WellnessCheckin />} />
+          <Route path="settings" element={<PatientSettings />} />
         </Route>
 
-        {/* Rutas de Terapeuta */}
+        {}
         <Route path="/therapist" element={<RequireAuth><TherapistLayout /></RequireAuth>}>
           <Route index element={<TherapistDashboard />} />
           <Route path="patients" element={<PatientsList />} />
@@ -83,12 +80,13 @@ function App() {
           <Route path="settings" element={<SettingsView />} />
         </Route>
 
-        {/* Rutas de Administrador */}
+        {}
         <Route path="/admin" element={<RequireAuth><AdminLayout /></RequireAuth>}>
           <Route index element={<AdminDashboard />} />
           <Route path="citas" element={<AdminAppointments />} />
           <Route path="pacientes" element={<AdminPatients />} />
           <Route path="doctores" element={<AdminDoctors />} />
+          <Route path="salas" element={<AdminRooms />} />
           <Route path="asignaciones" element={<AdminAssignments />} />
           <Route path="usuarios" element={<AdminUsers />} />
         </Route>

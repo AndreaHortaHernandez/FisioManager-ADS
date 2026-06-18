@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import path from 'path';
 import { feedbackService } from '../services/feedback.service';
 import { transcribeAudio, generateClinicalSummary } from '../services/ai.service';
+import { userRepository } from '../repositories/user.repository';
 import { catchAsync } from '../utils/catchAsync';
 import { ok, created } from '../utils/response';
 import { AppError } from '../errors/AppError';
@@ -31,10 +32,14 @@ export const createFeedback = catchAsync(async (req: Request, res: Response) => 
 export const uploadAudio = catchAsync(async (req: Request, res: Response) => {
   if (!req.file) throw new AppError('No se recibió ningún archivo de audio', 400);
 
+  const user = await userRepository.findById(req.user!.id);
+  if (!user?.audioConsentAt) {
+    throw new AppError('Debes aceptar el consentimiento de grabación de audio antes de continuar', 403, 'CONSENT_REQUIRED');
+  }
+
   const audioUrl   = `/uploads/${req.file.filename}`;
   const audioPath  = path.join(__dirname, '../../uploads', req.file.filename);
 
-  // Transcripción con Whisper + resumen con Ollama en paralelo-secuencial
   const transcript = await transcribeAudio(audioPath);
   const aiSummary  = await generateClinicalSummary(transcript);
 

@@ -2,6 +2,7 @@ import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Users, Activity, TrendingDown, CheckCircle2 } from 'lucide-react';
 import type { Feedback } from '../../types';
+import { resolveUploadUrl } from '../../utils/url';
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -29,14 +30,12 @@ export function AnalyticsView() {
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .slice(-20);
 
-  // VAS evolution: dolor por fecha (todos los pacientes)
   const vasData = recentFeedbacks.map(f => ({
     fecha: new Date(f.date).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }),
     dolor: f.painLevel,
     paciente: patients.find(p => p.id === f.patientId)?.name ?? '',
   }));
 
-  // Adherencia por paciente: % rutinas completadas
   const adherenceData = patients.map(p => {
     const pRoutines   = assignedRoutines.filter(r => r.patientId === p.id);
     const pCompleted  = pRoutines.filter(r => r.completed).length;
@@ -44,7 +43,6 @@ export function AnalyticsView() {
     return { nombre: p.name.split(' ')[0], adherencia: rate, total: pRoutines.length };
   });
 
-  // Per-patient stats table
   const patientStats = patients.map(p => {
     const pFeedbacks = feedbacks.filter(f => f.patientId === p.id);
     const pRoutines  = assignedRoutines.filter(r => r.patientId === p.id);
@@ -65,7 +63,7 @@ export function AnalyticsView() {
         <p className="text-on-surface-variant font-body">Resumen de todos tus pacientes.</p>
       </header>
 
-      {/* KPIs */}
+      {}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { icon: Users,        label: 'Pacientes',     value: patients.length,         color: 'text-primary',   bg: 'bg-primary/10'   },
@@ -85,10 +83,10 @@ export function AnalyticsView() {
         ))}
       </div>
 
-      {/* Gráficas */}
+      {}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
-        {/* VAS Evolution */}
+        {}
         <Card className="border-ghost">
           <h2 className="text-lg font-display font-bold mb-1">Evolución del Dolor (VAS)</h2>
           <p className="text-xs text-on-surface-variant mb-4">Últimas {vasData.length} sesiones de feedback</p>
@@ -119,7 +117,7 @@ export function AnalyticsView() {
           )}
         </Card>
 
-        {/* Adherencia por paciente */}
+        {}
         <Card className="border-ghost">
           <h2 className="text-lg font-display font-bold mb-1">Adherencia por Paciente</h2>
           <p className="text-xs text-on-surface-variant mb-4">% de rutinas completadas</p>
@@ -144,7 +142,7 @@ export function AnalyticsView() {
         </Card>
       </div>
 
-      {/* Tabla por paciente + Feedback reciente */}
+      {}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
         <div className="lg:col-span-3 space-y-4">
           <h2 className="text-lg font-display font-bold">Por Paciente</h2>
@@ -162,7 +160,7 @@ export function AnalyticsView() {
                   <tr key={patient.id} className="border-b border-surface-container-high last:border-0 hover:bg-surface-container/50 transition-colors">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <img src={patient.avatarUrl ?? `https://i.pravatar.cc/40?u=${patient.id}`}
+                        <img src={resolveUploadUrl(patient.avatarUrl) ?? `https://i.pravatar.cc/40?u=${patient.id}`}
                           alt={patient.name} className="w-8 h-8 rounded-full" />
                         <div>
                           <p className="font-bold text-on-surface">{patient.name}</p>

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
-import { FileText, Stethoscope, NotebookPen, Plus, CheckCircle2, RotateCcw, Loader2 } from 'lucide-react';
+import { FileText, Stethoscope, NotebookPen, Plus, CheckCircle2, RotateCcw, Loader2, Eye, EyeOff } from 'lucide-react';
 import {
   clinicalHistoryApi,
   type ClinicalHistory,
   type Diagnosis,
+  type ClinicalNote,
 } from '../services/clinicalHistory.api';
 
 type SubTab = 'historial' | 'diagnosticos' | 'notas';
@@ -24,19 +25,17 @@ export function ClinicalHistorySection({ patientId }: { patientId: string }) {
   const [error, setError] = useState('');
   const [tab, setTab] = useState<SubTab>('historial');
 
-  // Form historial
   const [bloodType, setBloodType]   = useState('');
   const [allergies, setAllergies]   = useState('');
   const [background, setBackground] = useState('');
   const [savingInfo, setSavingInfo] = useState(false);
 
-  // Form diagnóstico
   const [cie10, setCie10]           = useState('');
   const [dxDesc, setDxDesc]         = useState('');
   const [addingDx, setAddingDx]     = useState(false);
 
-  // Form nota
   const [noteText, setNoteText]     = useState('');
+  const [noteVisible, setNoteVisible] = useState(false);
   const [addingNote, setAddingNote] = useState(false);
 
   useEffect(() => {
@@ -100,13 +99,24 @@ export function ClinicalHistorySection({ patientId }: { patientId: string }) {
     if (!noteText.trim() || !history) return;
     setAddingNote(true);
     try {
-      const note = await clinicalHistoryApi.addNote(history.id, noteText.trim());
+      const note = await clinicalHistoryApi.addNote(history.id, noteText.trim(), noteVisible);
       setHistory({ ...history, notes: [note, ...history.notes] });
       setNoteText('');
+      setNoteVisible(false);
     } catch (e) {
       setError((e as Error).message);
     } finally {
       setAddingNote(false);
+    }
+  }
+
+  async function toggleNoteVisibility(note: ClinicalNote) {
+    if (!history) return;
+    try {
+      const updated = await clinicalHistoryApi.updateNoteVisibility(note.id, !note.isVisible);
+      setHistory({ ...history, notes: history.notes.map(n => (n.id === note.id ? updated : n)) });
+    } catch (e) {
+      setError((e as Error).message);
     }
   }
 
@@ -118,7 +128,6 @@ export function ClinicalHistorySection({ patientId }: { patientId: string }) {
     );
   }
 
-  // Sin historial todavía → ofrecer crearlo.
   if (!history) {
     return (
       <Card className="space-y-4 border-ghost">
@@ -146,7 +155,7 @@ export function ClinicalHistorySection({ patientId }: { patientId: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Tabs */}
+      {}
       <div className="flex gap-1 bg-surface-container-low rounded-2xl p-1 w-fit">
         {TABS.map(t => {
           const Icon = t.icon;
@@ -174,7 +183,7 @@ export function ClinicalHistorySection({ patientId }: { patientId: string }) {
 
       {error && <p className="text-sm text-error">{error}</p>}
 
-      {/* Historial general */}
+      {}
       {tab === 'historial' && (
         <Card className="space-y-4 border-ghost">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -195,7 +204,7 @@ export function ClinicalHistorySection({ patientId }: { patientId: string }) {
         </Card>
       )}
 
-      {/* Diagnósticos */}
+      {}
       {tab === 'diagnosticos' && (
         <div className="space-y-4">
           <Card className="space-y-3 border-ghost">
@@ -236,12 +245,16 @@ export function ClinicalHistorySection({ patientId }: { patientId: string }) {
         </div>
       )}
 
-      {/* Notas */}
+      {}
       {tab === 'notas' && (
         <div className="space-y-4">
           <Card className="space-y-3 border-ghost">
             <p className="text-xs font-bold uppercase tracking-wide text-on-surface-variant">Nueva nota clínica</p>
             <textarea className={`${inputCls} min-h-[80px] resize-y`} placeholder="Escribe una nota de seguimiento…" value={noteText} onChange={e => setNoteText(e.target.value)} />
+            <label className="flex items-center gap-2 cursor-pointer text-sm text-on-surface-variant">
+              <input type="checkbox" checked={noteVisible} onChange={e => setNoteVisible(e.target.checked)} className="w-4 h-4 accent-primary" />
+              Visible para el paciente
+            </label>
             <Button onClick={addNote} disabled={addingNote} className="flex items-center gap-1.5">
               <Plus size={16} /> {addingNote ? 'Guardando…' : 'Agregar nota'}
             </Button>
@@ -257,9 +270,19 @@ export function ClinicalHistorySection({ patientId }: { patientId: string }) {
               {history.notes.map(n => (
                 <Card key={n.id} level={2} className="border-ghost space-y-1">
                   <p className="text-sm text-on-surface leading-relaxed whitespace-pre-wrap">{n.content}</p>
-                  <p className="text-xs text-on-surface-variant">
-                    {n.author?.name ?? 'Profesional'} · {formatDate(n.createdAt)}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs text-on-surface-variant">
+                      {n.author?.name ?? 'Profesional'} · {formatDate(n.createdAt)}
+                    </p>
+                    <button onClick={() => toggleNoteVisibility(n)}
+                      title={n.isVisible ? 'Visible para el paciente — clic para ocultar' : 'Oculta para el paciente — clic para mostrar'}
+                      className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
+                        n.isVisible ? 'bg-secondary/15 text-secondary' : 'bg-surface-container-high text-on-surface-variant'
+                      }`}>
+                      {n.isVisible ? <Eye size={12} /> : <EyeOff size={12} />}
+                      {n.isVisible ? 'Visible' : 'Oculta'}
+                    </button>
+                  </div>
                 </Card>
               ))}
             </div>

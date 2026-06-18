@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Plus, Stethoscope, Mail, Phone, ToggleLeft, ToggleRight } from 'lucide-react';
 import { adminApi } from '../../services/admin.api';
 import type { Therapist } from '../../types';
+import { resolveUploadUrl } from '../../utils/url';
 
 const emptyForm = { name: '', email: '', password: '', phone: '', cedula: '', especialidad: '' };
 
@@ -114,8 +115,8 @@ export function AdminDoctors() {
           <div key={t.id} className="bg-surface-container rounded-2xl p-5">
             <div className="flex items-start justify-between gap-2 mb-3">
               <div className="flex items-center gap-3">
-                {t.avatarUrl
-                  ? <img src={t.avatarUrl} className="w-12 h-12 rounded-full object-cover" alt="" />
+                {resolveUploadUrl(t.avatarUrl)
+                  ? <img src={resolveUploadUrl(t.avatarUrl)} className="w-12 h-12 rounded-full object-cover" alt="" />
                   : <div className="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center shrink-0"><Stethoscope size={20} className="text-primary" /></div>
                 }
                 <div>

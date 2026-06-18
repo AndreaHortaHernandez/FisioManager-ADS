@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
-import { TrendingUp, Activity, Award, Flame, Target, Sparkles } from 'lucide-react';
+import { TrendingUp, Activity, Award, Flame, Target, Sparkles, FileDown } from 'lucide-react';
 import type { Feedback } from '../../types';
 import { progressApi, type PatientProgress } from '../../services/progress.api';
+import { reportApi } from '../../services/report.api';
+import { toLocalDateString } from '../../utils/date';
 
 const EMOTION_MAP: Record<Feedback['emotionalState'], { emoji: string; label: string }> = {
   GREAT:   { emoji: '😄', label: 'Excelente' },
@@ -30,7 +32,7 @@ function PainBar({ value }: { value: number }) {
 }
 
 function AdherenceBar({ count, max, day, date }: { count: number; max: number; day: string; date: string }) {
-  const isToday = date === new Date().toISOString().split('T')[0];
+  const isToday = date === toLocalDateString(new Date());
   const pct     = max > 0 ? (count / max) * 100 : 0;
   return (
     <div className="flex-1 flex flex-col items-center gap-1.5">
@@ -65,10 +67,26 @@ export function ProgressView() {
     new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
 
   const [progress, setProgress] = useState<PatientProgress | null>(null);
+  const [progressError, setProgressError] = useState('');
+  const [downloading, setDownloading] = useState(false);
+
+  function loadProgress() {
+    setProgressError('');
+    progressApi.getProgreso().then(setProgress).catch(e => setProgressError((e as Error).message));
+  }
 
   useEffect(() => {
-    progressApi.getProgreso().then(setProgress).catch(() => {});
+    loadProgress();
   }, []);
+
+  async function handleDownloadReport() {
+    setDownloading(true);
+    try {
+      await reportApi.downloadOwnProgress();
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   const adherenceMax = progress
     ? Math.max(...progress.adherenceByDay.map(d => d.count), 1)
@@ -76,12 +94,25 @@ export function ProgressView() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      <header>
-        <h1 className="text-3xl font-display font-bold text-on-surface mb-1">Mi Progreso</h1>
-        <p className="text-on-surface-variant font-body text-sm">Historial de tus sesiones y bienestar.</p>
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-3xl font-display font-bold text-on-surface mb-1">Mi Progreso</h1>
+          <p className="text-on-surface-variant font-body text-sm">Historial de tus sesiones y bienestar.</p>
+        </div>
+        <button onClick={handleDownloadReport} disabled={downloading}
+          className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors shrink-0 disabled:opacity-50">
+          <FileDown size={14} /> {downloading ? 'Generando…' : 'PDF'}
+        </button>
       </header>
 
-      {/* Stats */}
+      {progressError && !progress && (
+        <button onClick={loadProgress}
+          className="w-full text-sm text-error bg-error-container/30 px-4 py-2 rounded-lg text-left underline">
+          No se pudo cargar tu progreso — toca para reintentar
+        </button>
+      )}
+
+      {}
       <div className="grid grid-cols-2 gap-4">
         <Card className="flex items-center gap-3 border-ghost">
           <div className="w-10 h-10 rounded-xl bg-secondary/10 text-secondary flex items-center justify-center">
@@ -123,7 +154,7 @@ export function ProgressView() {
         </Card>
       </div>
 
-      {/* Adherence bars — 7 days */}
+      {}
       {progress && (
         <Card className="space-y-3 border-ghost">
           <div className="flex items-center gap-2 mb-1">
@@ -138,7 +169,7 @@ export function ProgressView() {
         </Card>
       )}
 
-      {/* AI Smart Insight */}
+      {}
       {progress?.aiInsight && (
         <Card className="bg-primary/5 border-ghost space-y-2">
           <div className="flex items-center gap-2">
@@ -149,7 +180,7 @@ export function ProgressView() {
         </Card>
       )}
 
-      {/* Pain chart */}
+      {}
       {lastFeedbacks.length > 0 && (
         <Card className="space-y-3 border-ghost">
           <div className="flex items-center gap-2 mb-1">
@@ -166,7 +197,7 @@ export function ProgressView() {
         </Card>
       )}
 
-      {/* Feedback history */}
+      {}
       <section className="space-y-3">
         <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">
           Historial de Feedback

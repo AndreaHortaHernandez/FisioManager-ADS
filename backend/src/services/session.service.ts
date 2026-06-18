@@ -12,7 +12,7 @@ export const sessionService = {
   async trackExercise(
     sessionId: string,
     patientId: string,
-    data: { activityId: string; order: number; status: 'COMPLETED' | 'SKIPPED' },
+    data: { activityId: string; order: number; status: 'COMPLETED' | 'SKIPPED' | 'NOT_COMPLETED' },
   ) {
     const session = await sessionRepository.findById(sessionId);
     if (!session) throw new AppError('Sesión no encontrada', 404);
@@ -31,7 +31,6 @@ export const sessionService = {
     const completed = session.exercises.filter(e => e.status === 'COMPLETED').length;
     const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-    // Marcar la rutina como completada
     await routineRepository.markComplete(session.routineId);
 
     return sessionRepository.finalize(sessionId, completionRate);

@@ -28,8 +28,6 @@ backend/uploads/*
 # Backend build
 backend/dist/
 
-# Claude Code local settings
-.claude/
 
 # Editor directories and files
 .vscode/*

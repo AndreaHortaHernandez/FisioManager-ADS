@@ -17,6 +17,7 @@ model User {
   emailVerified Boolean @default(true) // false solo para cuentas auto-registradas pendientes de verificar
   avatarUrl String?
   phone     String?
+  audioConsentAt DateTime? // consentimiento informado para grabar/procesar audio con IA
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -32,6 +33,10 @@ model User {
   clinicalHistory       ClinicalHistory?
   clinicalNotes         ClinicalNote[]          @relation("NoteAuthor")
   availability          TherapistAvailability[] @relation("TherapistAvailability")
+  patientPlans          TreatmentPlan[]         @relation("PlanPatient")
+  therapistPlans        TreatmentPlan[]         @relation("PlanTherapist")
+  notificationPreference NotificationPreference?
+  refreshTokens         RefreshToken[]
 }
 
 model PatientProfile {
@@ -80,20 +85,23 @@ model Routine {
 }
 
 model RoutineAssignment {
-  id          String    @id @default(cuid())
-  routineId   String
-  patientId   String
-  therapistId String
-  startDate   DateTime
-  endDate     DateTime?
-  frequency   String // DAILY | EVERY_OTHER_DAY | WEEKLY
-  status      String    @default("ACTIVE") // ACTIVE | PAUSED | CANCELLED
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String    @id @default(cuid())
+  routineId     String
+  patientId     String
+  therapistId   String
+  phaseId       String? // fase del plan de tratamiento que prescribe esta asignación
+  startDate     DateTime
+  endDate       DateTime?
+  frequency     String // DAILY | EVERY_OTHER_DAY | WEEKLY
+  status        String    @default("ACTIVE") // ACTIVE | PAUSED | CANCELLED
+  lastReminderAt DateTime? // último recordatorio de ejecución enviado al paciente
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  routine   Routine @relation(fields: [routineId], references: [id])
-  patient   User    @relation("AssignmentPatient", fields: [patientId], references: [id])
-  therapist User    @relation("AssignmentTherapist", fields: [therapistId], references: [id])
+  routine   Routine        @relation(fields: [routineId], references: [id])
+  patient   User           @relation("AssignmentPatient", fields: [patientId], references: [id])
+  therapist User           @relation("AssignmentTherapist", fields: [therapistId], references: [id])
+  phase     TreatmentPhase? @relation(fields: [phaseId], references: [id])
 }
 
 model Activity {
@@ -154,19 +162,34 @@ model SessionExercise {
 }
 
 model Appointment {
-  id          String   @id @default(cuid())
-  patientId   String
-  therapistId String
-  dateTime    DateTime
-  status      String   @default("SCHEDULED") // SCHEDULED | CANCELLED | COMPLETED
-  room        String? // sala
-  notes       String?
-  reminded24h Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(cuid())
+  patientId       String
+  therapistId     String
+  dateTime        DateTime
+  status          String   @default("SCHEDULED") // SCHEDULED | CANCELLED | COMPLETED
+  roomId          String? // sala asignada
+  treatmentPlanId String? // plan de tratamiento asociado (contexto clínico de la consulta)
+  notes           String?
+  reminded24h     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  patient   User @relation("AppointmentPatient", fields: [patientId], references: [id])
-  therapist User @relation("AppointmentTherapist", fields: [therapistId], references: [id])
+  patient       User           @relation("AppointmentPatient", fields: [patientId], references: [id])
+  therapist     User           @relation("AppointmentTherapist", fields: [therapistId], references: [id])
+  room          Room?          @relation(fields: [roomId], references: [id])
+  treatmentPlan TreatmentPlan? @relation(fields: [treatmentPlanId], references: [id])
+}
+
+// ── Salas / consultorios ───────────────────────────────────────────────────
+model Room {
+  id          String   @id @default(cuid())
+  name        String
+  location    String?
+  capacity    Int      @default(1)
+  equipment   String? // lista separada por comas
+  createdAt   DateTime @default(now())
+
+  appointments Appointment[]
 }
 
 // ── Historial Clínico ──────────────────────────────────────────────────────
@@ -201,10 +224,56 @@ model ClinicalNote {
   historyId String
   authorId  String
   content   String
+  isVisible Boolean  @default(false) // visible para el paciente
   createdAt DateTime @default(now())
 
   history ClinicalHistory @relation(fields: [historyId], references: [id], onDelete: Cascade)
   author  User            @relation("NoteAuthor", fields: [authorId], references: [id])
+}
+
+// ── Plan de Tratamiento ────────────────────────────────────────────────────
+model TreatmentPlan {
+  id           String    @id @default(cuid())
+  patientId    String
+  therapistId  String
+  name         String
+  clinicalGoal String?
+  startDate    DateTime
+  endDate      DateTime?
+  status       String    @default("ACTIVE") // ACTIVE | COMPLETED | SUSPENDED
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  patient      User             @relation("PlanPatient", fields: [patientId], references: [id])
+  therapist    User             @relation("PlanTherapist", fields: [therapistId], references: [id])
+  phases       TreatmentPhase[]
+  appointments Appointment[]
+}
+
+model TreatmentPhase {
+  id            String   @id @default(cuid())
+  planId        String
+  name          String
+  order         Int
+  durationWeeks Int
+  objectives    String?
+  createdAt     DateTime @default(now())
+
+  plan        TreatmentPlan       @relation(fields: [planId], references: [id], onDelete: Cascade)
+  assignments RoutineAssignment[]
+}
+
+// ── Preferencias de notificación ──────────────────────────────────────────
+model NotificationPreference {
+  id                   String  @id @default(cuid())
+  userId               String  @unique
+  emailEnabled         Boolean @default(true)
+  routineReminders     Boolean @default(true)
+  appointmentReminders Boolean @default(true)
+  quietHoursStart      String? // "HH:MM"
+  quietHoursEnd        String? // "HH:MM"
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ── Disponibilidad del terapeuta (HorarioDisponible) ──────────────────────
@@ -226,4 +295,15 @@ model RevokedToken {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
+}
+
+// ── Refresh tokens (RNF-023: access token de 60 min + refresh de 7 días) ──
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

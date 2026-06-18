@@ -58,7 +58,7 @@ export function LoginPage() {
           </p>
         </div>
 
-        {/* Selector login / crear cuenta */}
+        {}
         <div className="flex gap-1 bg-surface-container-low rounded-2xl p-1 mb-6">
           {(['login', 'signup'] as Mode[]).map(m => (
             <button

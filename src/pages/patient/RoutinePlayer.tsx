@@ -12,6 +12,7 @@ export function RoutinePlayer() {
   const navigate = useNavigate();
   const allRoutines = useStore(state => state.routines);
   const markRoutineComplete = useStore(state => state.markRoutineComplete);
+  const markRoutineCompletedLocally = useStore(state => state.markRoutineCompletedLocally);
 
   const routine = allRoutines.find(r => r.id === id);
 
@@ -24,16 +25,14 @@ export function RoutinePlayer() {
 
   const sessionIdRef = useRef<string | null>(null);
 
-  // Crear sesión al montar
   useEffect(() => {
     if (!routine) return;
     sessionApi.start(routine.id)
       .then(s => { sessionIdRef.current = s.id; })
       .catch(() => {});
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [routine?.id]);
 
-  // Initialize timer when activity or phase changes
   useEffect(() => {
     if (!routine) return;
     const currentActivity = routine.activities[currentIndex];
@@ -46,7 +45,6 @@ export function RoutinePlayer() {
     }
   }, [currentIndex, currentRepetition, phase, routine]);
 
-  // Main countdown logic
   useEffect(() => {
     let interval: number;
 
@@ -63,7 +61,7 @@ export function RoutinePlayer() {
     };
   }, [isPlaying, timeLeft]);
 
-  const recordExercise = (status: 'COMPLETED' | 'SKIPPED') => {
+  const recordExercise = (status: 'COMPLETED' | 'SKIPPED' | 'NOT_COMPLETED') => {
     if (!routine || !sessionIdRef.current) return;
     const activity = routine.activities[currentIndex];
     sessionApi.trackExercise(sessionIdRef.current, {
@@ -73,7 +71,7 @@ export function RoutinePlayer() {
     }).catch(() => {});
   };
 
-  const moveToNextActivity = (status: 'COMPLETED' | 'SKIPPED') => {
+  const moveToNextActivity = (status: 'COMPLETED' | 'SKIPPED' | 'NOT_COMPLETED') => {
     if (!routine) return;
     recordExercise(status);
 
@@ -86,15 +84,25 @@ export function RoutinePlayer() {
     }
   };
 
-  const handlePhaseComplete = (trigger: 'COMPLETED' | 'SKIPPED' = 'COMPLETED') => {
+  const handleOmitir = () => {
+    if (!routine) return;
+    const currentActivity = routine.activities[currentIndex];
+    const fullDuration = phase === 'EXERCISE'
+      ? currentActivity.durationMinutes * 60
+      : (currentActivity.restSeconds || 0);
+    const status: 'SKIPPED' | 'NOT_COMPLETED' = timeLeft < fullDuration ? 'NOT_COMPLETED' : 'SKIPPED';
+    handlePhaseComplete(status);
+  };
+
+  const handlePhaseComplete = (trigger: 'COMPLETED' | 'SKIPPED' | 'NOT_COMPLETED' = 'COMPLETED') => {
     if (!routine) return;
     setIsPlaying(false);
 
     const currentActivity = routine.activities[currentIndex];
 
     if (phase === 'EXERCISE') {
-      if (trigger === 'SKIPPED') {
-        moveToNextActivity('SKIPPED');
+      if (trigger !== 'COMPLETED') {
+        moveToNextActivity(trigger);
       } else if (currentRepetition < currentActivity.repetitions) {
         if (currentActivity.restSeconds && currentActivity.restSeconds > 0) {
           setPhase('REST');
@@ -106,7 +114,7 @@ export function RoutinePlayer() {
         moveToNextActivity('COMPLETED');
       }
     } else if (phase === 'REST') {
-      // Saltar descanso: avanzar al siguiente rep sin registrar
+
       setCurrentRepetition(prev => prev + 1);
       setPhase('EXERCISE');
     }
@@ -117,6 +125,7 @@ export function RoutinePlayer() {
     try {
       if (sessionIdRef.current) {
         await sessionApi.finalize(sessionIdRef.current);
+        markRoutineCompletedLocally(routine.id);
       } else {
         await markRoutineComplete(routine.id);
       }
@@ -148,7 +157,7 @@ export function RoutinePlayer() {
 
   return (
     <div className="h-[calc(100vh-80px)] flex flex-col pt-4 animate-fade-in">
-      {/* Progress Bar Header */}
+      {}
       <div className="mb-6">
         <div className="flex justify-between items-end mb-2">
            <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">
@@ -180,7 +189,7 @@ export function RoutinePlayer() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Video Placeholder */}
+            {}
             <div className={cn(
               "w-full aspect-video rounded-3xl overflow-hidden flex items-center justify-center transition-colors duration-1000",
               phase === 'REST' ? "bg-secondary-container" : "bg-surface-container-lowest border border-ghost shadow-ambient"
@@ -198,7 +207,7 @@ export function RoutinePlayer() {
               )}
             </div>
 
-            {/* Title Card */}
+            {}
             <Card className="text-center py-6 shadow-ambient">
               <h2 className="text-2xl font-display font-bold text-on-surface mb-2">
                 {currentActivity.title}
@@ -207,7 +216,7 @@ export function RoutinePlayer() {
                 {currentActivity.description}
               </p>
 
-              {/* Giant Timer */}
+              {}
               <div className="flex flex-col items-center justify-center mb-2">
                 <p className={cn(
                   "text-6xl font-display font-black font-variant-numeric tracking-tight transition-colors duration-300",
@@ -221,7 +230,7 @@ export function RoutinePlayer() {
               </div>
             </Card>
 
-            {/* Badges / Metrics */}
+            {}
             {phase === 'EXERCISE' && (
               <div className="flex gap-4 px-2">
                 <div className="flex-1 bg-surface-container-low rounded-2xl p-4 text-center border-ghost">
@@ -238,10 +247,10 @@ export function RoutinePlayer() {
         )}
       </div>
 
-      {/* Float Controls */}
+      {}
       {!isRoutineFinished && (
         <div className="fixed bottom-24 left-4 right-4 bg-surface/80 backdrop-blur-md p-4 rounded-3xl shadow-ambient border-ghost border flex gap-3 items-center animate-slide-up z-40">
-           {/* Play/Pause */}
+           {}
            <button
              onClick={() => setIsPlaying(!isPlaying)}
              className={cn(
@@ -258,16 +267,16 @@ export function RoutinePlayer() {
              </p>
            </div>
 
-           {/* Omitir */}
+           {}
            <button
-             onClick={() => handlePhaseComplete('SKIPPED')}
+             onClick={handleOmitir}
              className="flex items-center gap-1 text-xs font-bold text-on-surface-variant hover:text-error transition-colors px-2"
            >
              <SkipForward size={16} />
              Omitir
            </button>
 
-           {/* Siguiente — solo cuando el timer llega a 0 */}
+           {}
            <Button
              onClick={() => handlePhaseComplete('COMPLETED')}
              disabled={timeLeft > 0}

@@ -37,7 +37,6 @@ export function RoutineBuilder() {
   const [bodyPartFilter, setBodyPartFilter]       = useState<BodyPart | 'ALL'>('ALL');
   const [saving, setSaving]                       = useState(false);
 
-  // Pre-populate when editing
   useEffect(() => {
     if (!editId) return;
     const routine = routines.find(r => r.id === editId);
@@ -134,7 +133,7 @@ export function RoutineBuilder() {
 
       <div className="flex-1 flex gap-8 overflow-hidden pb-8">
 
-        {/* Left Column: Catálogo */}
+        {}
         <div className="w-2/3 flex flex-col bg-surface-container-low rounded-2xl border-ghost overflow-hidden">
           <div className="p-4 border-b border-surface-container-high bg-surface-container-lowest space-y-3">
             <h2 className="font-display font-bold text-lg">Catálogo de Ejercicios</h2>
@@ -215,7 +214,7 @@ export function RoutineBuilder() {
           </div>
         </div>
 
-        {/* Right Column: Canvas */}
+        {}
         <div className="flex-1 flex flex-col bg-surface-container-lowest rounded-2xl shadow-ambient border-ghost overflow-hidden">
           <div className="p-6 border-b border-surface-container-high bg-surface">
             <div className="flex gap-4 mb-4">

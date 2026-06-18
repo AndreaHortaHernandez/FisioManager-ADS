@@ -25,10 +25,13 @@ type RecordState = 'IDLE' | 'RECORDING' | 'PROCESSING' | 'DONE';
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
 export function WellnessCheckin() {
-  const navigate       = useNavigate();
-  const addFeedback    = useStore(state => state.addFeedback);
-  const currentUserId  = useStore(state => state.currentUser);
-  const token          = useStore(state => state.token);
+  const navigate         = useNavigate();
+  const addFeedback      = useStore(state => state.addFeedback);
+  const currentUserId    = useStore(state => state.currentUser);
+  const token            = useStore(state => state.token);
+  const authUser         = useStore(state => state.authUser);
+  const giveAudioConsent = useStore(state => state.giveAudioConsent);
+  const [showConsent, setShowConsent] = useState(false);
 
   const [emotion, setEmotion]         = useState<Feedback['emotionalState']>('GOOD');
   const [discomfort, setDiscomfort]   = useState(3);
@@ -45,6 +48,10 @@ export function WellnessCheckin() {
   const chunksRef        = useRef<Blob[]>([]);
 
   const startRecording = async () => {
+    if (!authUser?.audioConsentAt) {
+      setShowConsent(true);
+      return;
+    }
     setMicError('');
     chunksRef.current = [];
     try {
@@ -62,6 +69,12 @@ export function WellnessCheckin() {
     } catch {
       setMicError('No se pudo acceder al micrófono.');
     }
+  };
+
+  const acceptConsentAndRecord = async () => {
+    await giveAudioConsent();
+    setShowConsent(false);
+    startRecording();
   };
 
   const stopRecording = () => {
@@ -85,7 +98,7 @@ export function WellnessCheckin() {
         if (json.data.transcript) setNotes(prev => prev ? `${prev}\n${json.data.transcript}` : json.data.transcript);
       }
     } catch {
-      // silently ignore AI failures
+
     } finally {
       setRecordState('DONE');
     }
@@ -130,7 +143,7 @@ export function WellnessCheckin() {
         <p className="text-on-surface-variant font-body text-sm">¿Cómo estás hoy? Tómate un momento.</p>
       </header>
 
-      {/* 2x2 emotional state grid */}
+      {}
       <Card className="space-y-4">
         <h2 className="text-lg font-display font-bold">¿Cómo te sientes ahora?</h2>
         <div className="grid grid-cols-2 gap-3">
@@ -151,7 +164,7 @@ export function WellnessCheckin() {
         </div>
       </Card>
 
-      {/* Discomfort level */}
+      {}
       <Card className="space-y-4">
         <h2 className="text-lg font-display font-bold">Nivel de malestar</h2>
         <p className="text-sm text-on-surface-variant">Del 1 (ninguno) al 10 (severo).</p>
@@ -166,7 +179,7 @@ export function WellnessCheckin() {
         </div>
       </Card>
 
-      {/* Journal textarea */}
+      {}
       <Card level={2} className="space-y-4">
         <h2 className="text-lg font-display font-bold">Diario personal</h2>
         <p className="text-sm text-on-surface-variant">Escribe cómo te sientes o graba una nota de voz.</p>
@@ -178,7 +191,7 @@ export function WellnessCheckin() {
           className="w-full bg-surface-container rounded-xl p-3 text-sm text-on-surface resize-none outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-on-surface-variant/50"
         />
 
-        {/* Voice recording */}
+        {}
         <div className="flex flex-col items-center gap-3 py-2">
           {recordState === 'IDLE' && (
             <button
@@ -220,7 +233,7 @@ export function WellnessCheckin() {
         </div>
       </Card>
 
-      {/* Support resources */}
+      {}
       <section className="space-y-3">
         <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Recursos de apoyo</h2>
         {RESOURCES.map(r => {
@@ -251,6 +264,25 @@ export function WellnessCheckin() {
       >
         {loading ? 'Guardando...' : 'Guardar check-in'} <ArrowRight size={20} />
       </Button>
+
+      {showConsent && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-sm space-y-4">
+            <h2 className="text-lg font-display font-bold">Consentimiento de grabación</h2>
+            <p className="text-sm text-on-surface-variant">
+              Para grabar una nota de voz necesitamos tu consentimiento para procesar el audio con inteligencia
+              artificial (transcripción). Puedes seguir usando el diario solo con texto.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setShowConsent(false)}
+                className="flex-1 py-2.5 rounded-xl border border-surface-container-high text-sm hover:bg-surface-container transition-colors">
+                Cancelar
+              </button>
+              <Button onClick={acceptConsentAndRecord} className="flex-1">Aceptar y grabar</Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

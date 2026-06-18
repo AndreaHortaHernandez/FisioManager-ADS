@@ -1,17 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Plus, Calendar, Clock, User, Mail, XCircle, Pencil, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Calendar, Clock, User, Mail, XCircle, Pencil, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { appointmentsApi } from '../../services/appointments.api';
 import { adminApi } from '../../services/admin.api';
+import { roomsApi, type Room } from '../../services/rooms.api';
+import { treatmentPlanApi, type TreatmentPlan } from '../../services/treatmentPlan.api';
 import type { Appointment, Therapist } from '../../types';
 import { cn } from '../../utils/cn';
+import { toLocalDateString } from '../../utils/date';
 
 const statusLabel: Record<string, string> = {
   SCHEDULED: 'Programada',
+  CONFIRMED: 'Confirmada',
   CANCELLED: 'Cancelada',
   COMPLETED: 'Completada',
 };
 const statusColor: Record<string, string> = {
   SCHEDULED: 'bg-primary-container text-primary',
+  CONFIRMED: 'bg-secondary-container text-secondary',
   CANCELLED: 'bg-error-container text-error',
   COMPLETED: 'bg-surface-container text-on-surface-variant',
 };
@@ -34,8 +39,10 @@ export function AdminAppointments() {
   const [filterStatus, setFilterStatus] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editAppt, setEditAppt] = useState<Appointment | null>(null);
-  const [form, setForm] = useState({ patientId: '', therapistId: '', dateTime: '', room: '', notes: '' });
-  const [reminderMsg, setReminderMsg] = useState<Record<string, string>>({});
+  const [form, setForm] = useState({ patientId: '', therapistId: '', dateTime: '', roomId: '', treatmentPlanId: '', notes: '' });
+  const [reminderMsg, setReminderMsg] = useState<Record<string, { text: string; preview?: string | null }>>({});
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [patientPlans, setPatientPlans] = useState<TreatmentPlan[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -43,7 +50,13 @@ export function AdminAppointments() {
     loadAppointments();
     adminApi.getTherapists().then(setTherapists);
     adminApi.getPatients().then(setPatients);
+    roomsApi.getAll().then(setRooms).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!form.patientId) { setPatientPlans([]); return; }
+    treatmentPlanApi.getByPatient(form.patientId).then(setPatientPlans).catch(() => setPatientPlans([]));
+  }, [form.patientId]);
 
   function loadAppointments() {
     setLoading(true);
@@ -55,11 +68,10 @@ export function AdminAppointments() {
     }).then(setAppointments).finally(() => setLoading(false));
   }
 
-  // Navigate day by day
   function changeDay(delta: number) {
     const base = filterDate ? new Date(filterDate + 'T00:00:00') : new Date();
     base.setDate(base.getDate() + delta);
-    const d = base.toISOString().split('T')[0];
+    const d = toLocalDateString(base);
     setFilterDate(d);
   }
 
@@ -67,7 +79,7 @@ export function AdminAppointments() {
 
   function openCreate() {
     setEditAppt(null);
-    setForm({ patientId: '', therapistId: '', dateTime: '', room: '', notes: '' });
+    setForm({ patientId: '', therapistId: '', dateTime: '', roomId: '', treatmentPlanId: '', notes: '' });
     setError('');
     setShowForm(true);
   }
@@ -78,7 +90,8 @@ export function AdminAppointments() {
       patientId: appt.patientId,
       therapistId: appt.therapistId,
       dateTime: toDatetimeLocal(appt.dateTime),
-      room: appt.room ?? '',
+      roomId: appt.roomId ?? '',
+      treatmentPlanId: appt.treatmentPlanId ?? '',
       notes: appt.notes ?? '',
     });
     setError('');
@@ -92,13 +105,19 @@ export function AdminAppointments() {
       const dateTimeISO = new Date(form.dateTime).toISOString();
       if (editAppt) {
         const updated = await appointmentsApi.update(editAppt.id, {
-          dateTime: dateTimeISO, room: form.room || undefined, notes: form.notes || undefined,
+          dateTime: dateTimeISO,
+          roomId: form.roomId || null,
+          treatmentPlanId: form.treatmentPlanId || null,
+          notes: form.notes || undefined,
         });
         setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
       } else {
         const created = await appointmentsApi.create({
           patientId: form.patientId, therapistId: form.therapistId,
-          dateTime: dateTimeISO, room: form.room || undefined, notes: form.notes || undefined,
+          dateTime: dateTimeISO,
+          roomId: form.roomId || undefined,
+          treatmentPlanId: form.treatmentPlanId || undefined,
+          notes: form.notes || undefined,
         });
         setAppointments(prev => [created, ...prev]);
       }
@@ -113,13 +132,18 @@ export function AdminAppointments() {
     setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'CANCELLED' } : a));
   }
 
+  async function handleConfirm(id: string) {
+    await appointmentsApi.confirm(id);
+    setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: 'CONFIRMED' } : a));
+  }
+
   async function handleReminder(appt: Appointment) {
     try {
       const res = await appointmentsApi.sendReminder(appt.id);
-      const msg = res.preview ? `Vista previa: ${res.preview}` : 'Correo enviado';
-      setReminderMsg(prev => ({ ...prev, [appt.id]: msg }));
+      const msg = res.preview ? 'Correo de prueba generado:' : 'Correo enviado';
+      setReminderMsg(prev => ({ ...prev, [appt.id]: { text: msg, preview: res.preview } }));
     } catch (e: unknown) {
-      setReminderMsg(prev => ({ ...prev, [appt.id]: (e as Error).message }));
+      setReminderMsg(prev => ({ ...prev, [appt.id]: { text: (e as Error).message } }));
     }
   }
 
@@ -136,7 +160,7 @@ export function AdminAppointments() {
         </button>
       </div>
 
-      {/* Filtros */}
+      {}
       <div className="bg-surface-container rounded-2xl p-4 mb-6 flex flex-wrap gap-3 items-center">
         <div className="flex items-center gap-1">
           <button onClick={() => changeDay(-1)} className="p-1.5 rounded-lg hover:bg-surface transition-colors">
@@ -171,12 +195,13 @@ export function AdminAppointments() {
           className="bg-surface border border-surface-container-high rounded-lg px-3 py-1.5 text-sm">
           <option value="">Todos los estados</option>
           <option value="SCHEDULED">Programadas</option>
+          <option value="CONFIRMED">Confirmadas</option>
           <option value="COMPLETED">Completadas</option>
           <option value="CANCELLED">Canceladas</option>
         </select>
       </div>
 
-      {/* Modal formulario */}
+      {}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl p-6 w-full max-w-md shadow-2xl">
@@ -214,10 +239,24 @@ export function AdminAppointments() {
               </div>
               <div>
                 <label className="text-sm text-on-surface-variant mb-1 block">Sala (opcional)</label>
-                <input type="text" value={form.room} placeholder="Ej. Sala 1"
-                  onChange={e => setForm(f => ({ ...f, room: e.target.value }))}
-                  className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
+                <select value={form.roomId}
+                  onChange={e => setForm(f => ({ ...f, roomId: e.target.value }))}
+                  className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm">
+                  <option value="">Sin sala asignada</option>
+                  {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
               </div>
+              {patientPlans.length > 0 && (
+                <div>
+                  <label className="text-sm text-on-surface-variant mb-1 block">Plan de tratamiento (opcional)</label>
+                  <select value={form.treatmentPlanId}
+                    onChange={e => setForm(f => ({ ...f, treatmentPlanId: e.target.value }))}
+                    className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm">
+                    <option value="">Sin vincular</option>
+                    {patientPlans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="text-sm text-on-surface-variant mb-1 block">Notas (opcional)</label>
                 <textarea rows={3} value={form.notes}
@@ -240,7 +279,7 @@ export function AdminAppointments() {
         </div>
       )}
 
-      {/* Lista */}
+      {}
       {loading && <p className="text-on-surface-variant">Cargando...</p>}
       {!loading && appointments.length === 0 && (
         <div className="bg-surface-container rounded-2xl p-12 text-center text-on-surface-variant">
@@ -272,14 +311,21 @@ export function AdminAppointments() {
                   <div className="flex gap-4 mt-1 text-sm text-on-surface-variant flex-wrap">
                     <span className="flex items-center gap-1"><User size={12} /> {appt.patient.name}</span>
                     <span className="flex items-center gap-1">{'🩺'} {appt.therapist.name}</span>
-                    {appt.room && <span className="flex items-center gap-1">{'📍'} {appt.room}</span>}
+                    {appt.room && <span className="flex items-center gap-1">{'📍'} {appt.room.name}</span>}
+                    {appt.treatmentPlan && <span className="flex items-center gap-1">{'🗂️'} {appt.treatmentPlan.name}</span>}
                   </div>
                   {appt.notes && <p className="text-xs text-on-surface-variant mt-1 italic">"{appt.notes}"</p>}
                 </div>
               </div>
 
-              {appt.status === 'SCHEDULED' && (
+              {(appt.status === 'SCHEDULED' || appt.status === 'CONFIRMED') && (
                 <div className="flex gap-2 shrink-0 flex-wrap">
+                  {appt.status === 'SCHEDULED' && (
+                    <button onClick={() => handleConfirm(appt.id)}
+                      className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-surface hover:bg-secondary-container hover:text-secondary transition-colors">
+                      <CheckCircle2 size={13} /> Confirmar
+                    </button>
+                  )}
                   <button onClick={() => openEdit(appt)}
                     className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-surface hover:bg-surface-container-high transition-colors">
                     <Pencil size={13} /> Reprogramar
@@ -296,7 +342,15 @@ export function AdminAppointments() {
               )}
             </div>
             {reminderMsg[appt.id] && (
-              <p className="text-xs text-primary bg-primary-container rounded-lg px-3 py-2 mt-3 break-all">{reminderMsg[appt.id]}</p>
+              <div className="text-xs bg-surface-container-low text-on-surface rounded-lg px-3 py-2 mt-3 border border-outline-variant/30">
+                <p>{reminderMsg[appt.id].text}</p>
+                {reminderMsg[appt.id].preview && (
+                  <a href={reminderMsg[appt.id].preview!} target="_blank" rel="noopener noreferrer"
+                    className="text-primary underline break-all">
+                    {reminderMsg[appt.id].preview}
+                  </a>
+                )}
+              </div>
             )}
           </div>
         ))}

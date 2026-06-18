@@ -36,6 +36,24 @@ export const adminApi = {
   createAssignment(patientId: string, therapistId: string) {
     return api.post<{ message: string }>('/asignaciones', { patientId, therapistId });
   },
+
+  deleteUserPermanently(userId: string) {
+    return api.delete<{ message: string }>(`/admin/users/${userId}`);
+  },
+
+  updateUser(userId: string, data: {
+    name?: string; phone?: string; avatarUrl?: string;
+    age?: number; condition?: string; therapistId?: string;
+    cedula?: string; especialidad?: string;
+  }) {
+    return api.patch<UserRow>(`/admin/users/${userId}`, data);
+  },
+
+  uploadUserAvatar(userId: string, file: File) {
+    const fd = new FormData();
+    fd.append('avatar', file);
+    return api.postForm<UserRow>(`/admin/users/${userId}/avatar`, fd);
+  },
 };
 
 export type UserRow = {

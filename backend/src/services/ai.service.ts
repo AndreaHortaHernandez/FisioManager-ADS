@@ -97,7 +97,7 @@ Sé específico con los datos. Solo el mensaje, sin introducciones ni formato.`;
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false }),
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(6_000),
     });
     if (!res.ok) return '';
     const data = await res.json() as { response?: string };

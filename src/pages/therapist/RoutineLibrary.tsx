@@ -6,6 +6,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Plus, BookMarked, Users, Check, Copy, Calendar, Pause, XCircle, PlayCircle, Pencil, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import type { AssignmentFrequency, AssignmentStatus, RoutineAssignment } from '../../types';
+import { toLocalDateString } from '../../utils/date';
 
 const FREQUENCY_LABELS: Record<AssignmentFrequency, string> = {
   DAILY:           'Diario',
@@ -53,7 +54,7 @@ export function RoutineLibrary() {
   const handleOpenAssign = (routineId: string) => {
     setSelectedRoutineId(routineId);
     setSelectedPatientId('');
-    setStartDate(new Date().toISOString().split('T')[0]);
+    setStartDate(toLocalDateString(new Date()));
     setEndDate('');
     setFrequency('DAILY');
     setModalOpen(true);
@@ -138,7 +139,7 @@ export function RoutineLibrary() {
         </Button>
       </header>
 
-      {/* Tabs */}
+      {}
       <div className="flex gap-2 border-b border-surface-container-high pb-0">
         {['Plantillas', 'Asignaciones'].map((tab, i) => (
           <button
@@ -155,7 +156,7 @@ export function RoutineLibrary() {
         ))}
       </div>
 
-      {/* Tab: Plantillas */}
+      {}
       {!assignmentsTab && (
         libraryRoutines.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-20 bg-surface-container-lowest rounded-2xl border-ghost">
@@ -215,7 +216,7 @@ export function RoutineLibrary() {
         )
       )}
 
-      {/* Tab: Asignaciones */}
+      {}
       {assignmentsTab && (
         <div className="space-y-6">
           {routineAssignments.length === 0 ? (
@@ -249,10 +250,10 @@ export function RoutineLibrary() {
         </div>
       )}
 
-      {/* Modal de asignación */}
+      {}
       <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Asignar rutina a paciente">
         <div className="space-y-4 mb-6">
-          {/* Paciente */}
+          {}
           <div>
             <label className="text-sm font-bold text-on-surface-variant mb-1 block">Paciente</label>
             <select
@@ -267,7 +268,7 @@ export function RoutineLibrary() {
             </select>
           </div>
 
-          {/* Fechas */}
+          {}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-bold text-on-surface-variant mb-1 block">Fecha inicio *</label>
@@ -290,7 +291,7 @@ export function RoutineLibrary() {
             </div>
           </div>
 
-          {/* Frecuencia */}
+          {}
           <div>
             <label className="text-sm font-bold text-on-surface-variant mb-1 block">Frecuencia</label>
             <div className="flex gap-2">

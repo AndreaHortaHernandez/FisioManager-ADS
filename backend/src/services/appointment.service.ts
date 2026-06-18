@@ -2,13 +2,11 @@ import { appointmentRepository } from '../repositories/appointment.repository';
 import { availabilityRepository } from '../repositories/availability.repository';
 import { emailService } from './email.service';
 import { AppError } from '../errors/AppError';
+import { logger } from '../lib/logger';
 
-// Zona horaria de la clínica — fija la interpretación de los horarios
-// independientemente de la zona del servidor (en Docker suele ser UTC).
 const CLINIC_TZ = process.env.CLINIC_TZ ?? 'America/Mexico_City';
 const WEEKDAYS: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
-// Extrae (díaDeSemana, "HH:MM") de un instante en la zona horaria de la clínica.
 function zonedParts(date: Date): { dayOfWeek: number; hhmm: string } {
   const parts = new Intl.DateTimeFormat('en-US', {
     timeZone: CLINIC_TZ,
@@ -23,8 +21,6 @@ function zonedParts(date: Date): { dayOfWeek: number; hhmm: string } {
   return { dayOfWeek: WEEKDAYS[get('weekday')], hhmm: `${hour}:${get('minute')}` };
 }
 
-// Valida que la cita caiga dentro del horario disponible del terapeuta.
-// Si el terapeuta no tiene horario configurado, no se restringe.
 async function assertWithinAvailability(therapistId: string, dt: Date) {
   const slots = await availabilityRepository.findByTherapist(therapistId);
   if (slots.length === 0) return;
@@ -52,7 +48,7 @@ export const appointmentService = {
     return appt;
   },
 
-  async create(data: { patientId: string; therapistId: string; dateTime: string; room?: string; notes?: string }) {
+  async create(data: { patientId: string; therapistId: string; dateTime: string; roomId?: string; treatmentPlanId?: string; notes?: string }) {
     const dt = new Date(data.dateTime);
 
     await assertWithinAvailability(data.therapistId, dt);
@@ -65,19 +61,18 @@ export const appointmentService = {
 
     const appt = await appointmentRepository.create({ ...data, dateTime: dt });
 
-    // Recordatorio automático — no bloquea si falla el correo
     emailService.sendAppointmentReminder({
       patientName:   appt.patient.name,
       patientEmail:  appt.patient.email,
       therapistName: appt.therapist.name,
       dateTime:      appt.dateTime,
       notes:         appt.notes ?? undefined,
-    }).catch(err => console.error('[Email] Error al enviar recordatorio automático:', err));
+    }).catch(err => logger.error('appointment_confirmation_email_failed', { appointmentId: appt.id, error: err.message }));
 
     return appt;
   },
 
-  async update(id: string, data: { dateTime?: string; status?: string; room?: string; notes?: string }) {
+  async update(id: string, data: { dateTime?: string; status?: string; roomId?: string | null; treatmentPlanId?: string | null; notes?: string }) {
     const existing = await this.getById(id);
 
     if (data.dateTime && existing.status !== 'CANCELLED') {
@@ -99,6 +94,14 @@ export const appointmentService = {
   async cancel(id: string) {
     await this.getById(id);
     return appointmentRepository.update(id, { status: 'CANCELLED' });
+  },
+
+  async confirm(id: string) {
+    const appt = await this.getById(id);
+    if (appt.status !== 'SCHEDULED') {
+      throw new AppError('Solo se pueden confirmar citas en estado Programada', 409);
+    }
+    return appointmentRepository.update(id, { status: 'CONFIRMED' });
   },
 
   async sendReminder(id: string) {

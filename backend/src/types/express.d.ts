@@ -6,6 +6,7 @@ declare global {
         role: string;
         name: string;
       };
+      correlationId: string;
     }
   }
 }

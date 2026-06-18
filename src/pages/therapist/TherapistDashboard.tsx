@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { useStore } from '../../store/useStore';
 import { Users, Activity, HeartPulse } from 'lucide-react';
+import { resolveUploadUrl } from '../../utils/url';
 
 export function TherapistDashboard() {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ export function TherapistDashboard() {
         <p className="text-on-surface-variant font-body">Here is your clinical overview for today.</p>
       </header>
 
-      {/* Metrics Row */}
+      {}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
          <Card className="flex items-center gap-4 border-ghost">
             <div className="p-4 bg-primary-container/10 rounded-xl text-primary">
@@ -28,7 +29,7 @@ export function TherapistDashboard() {
                <p className="text-3xl font-display font-semibold">{totalPatients}</p>
             </div>
          </Card>
-         
+
          <Card className="flex items-center gap-4 border-ghost">
             <div className="p-4 bg-secondary-container/20 rounded-xl text-secondary">
                <Activity size={32} />
@@ -51,7 +52,7 @@ export function TherapistDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Patients List */}
+        {}
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-xl font-display font-bold text-on-surface">Recent Patients</h2>
           <Card level={2}>
@@ -63,7 +64,7 @@ export function TherapistDashboard() {
                   className="flex items-center justify-between p-4 bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer border-ghost"
                 >
                   <div className="flex items-center gap-4">
-                     <img src={patient.avatarUrl} alt={patient.name} className="w-12 h-12 rounded-full" />
+                     <img src={resolveUploadUrl(patient.avatarUrl) ?? `https://i.pravatar.cc/48?u=${patient.id}`} alt={patient.name} className="w-12 h-12 rounded-full" />
                      <div>
                        <h3 className="font-bold text-on-surface">{patient.name}</h3>
                        <p className="text-sm text-on-surface-variant">{patient.condition}</p>
@@ -78,7 +79,7 @@ export function TherapistDashboard() {
           </Card>
         </div>
 
-        {/* Action Center */}
+        {}
         <div className="space-y-4">
           <h2 className="text-xl font-display font-bold text-on-surface">Quick Actions</h2>
           <Card level={2} className="space-y-3">

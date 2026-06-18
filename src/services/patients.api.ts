@@ -1,7 +1,6 @@
 import { api } from './api';
 import type { Patient } from '../types';
 
-// Estructura real que devuelve el backend
 interface ApiPatient {
   id: string;
   name: string;

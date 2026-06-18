@@ -68,7 +68,7 @@ export function AdminAssignments() {
           const currentTherapistId = assignments[p.id] ?? '';
           return (
             <div key={p.id} className="bg-surface-container rounded-2xl p-5 flex items-center gap-4 flex-wrap">
-              {/* Paciente */}
+              {}
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center shrink-0">
                   <User size={18} className="text-primary" />
@@ -82,10 +82,10 @@ export function AdminAssignments() {
                 </div>
               </div>
 
-              {/* Flecha */}
+              {}
               <div className="text-on-surface-variant text-xl hidden sm:block">→</div>
 
-              {/* Selector terapeuta */}
+              {}
               <div className="flex items-center gap-3 flex-1 min-w-[200px]">
                 <div className="w-8 h-8 rounded-full bg-surface flex items-center justify-center shrink-0">
                   <Stethoscope size={14} className="text-on-surface-variant" />
@@ -112,7 +112,7 @@ export function AdminAssignments() {
                 )}
               </div>
 
-              {/* Terapeuta actual */}
+              {}
               {currentTherapistId && (
                 <p className="text-xs text-on-surface-variant w-full sm:w-auto">
                   Actual: <span className="text-on-surface font-medium">{therapistName(currentTherapistId)}</span>

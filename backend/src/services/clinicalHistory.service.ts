@@ -42,9 +42,19 @@ export const clinicalHistoryService = {
     return clinicalHistoryRepository.updateDiagnosis(id, data);
   },
 
-  async addNote(historyId: string, authorId: string, content: string) {
+  async addNote(historyId: string, authorId: string, content: string, isVisible?: boolean) {
     const history = await clinicalHistoryRepository.findById(historyId);
     if (!history) throw new AppError('Historial clínico no encontrado', 404);
-    return clinicalHistoryRepository.createNote(historyId, authorId, content);
+    return clinicalHistoryRepository.createNote(historyId, authorId, content, isVisible);
+  },
+
+  async updateNoteVisibility(id: string, isVisible: boolean) {
+    const note = await clinicalHistoryRepository.findNoteById(id);
+    if (!note) throw new AppError('Nota no encontrada', 404);
+    return clinicalHistoryRepository.updateNoteVisibility(id, isVisible);
+  },
+
+  async getOwnHistory(patientId: string) {
+    return clinicalHistoryRepository.findByPatientIdForPatient(patientId);
   },
 };

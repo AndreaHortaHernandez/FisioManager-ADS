@@ -3,6 +3,8 @@ import { prisma } from '../lib/prisma';
 const include = {
   patient: { select: { id: true, name: true, email: true, phone: true, avatarUrl: true } },
   therapist: { select: { id: true, name: true, email: true } },
+  room: { select: { id: true, name: true } },
+  treatmentPlan: { select: { id: true, name: true } },
 } as const;
 
 export const appointmentRepository = {
@@ -14,10 +16,10 @@ export const appointmentRepository = {
     if (filters.patientId)   where.patientId   = filters.patientId;
 
     if (filters.date) {
-      const start = new Date(filters.date);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(filters.date);
-      end.setHours(23, 59, 59, 999);
+
+      const [year, month, day] = filters.date.split('-').map(Number);
+      const start = new Date(year, month - 1, day, 0, 0, 0, 0);
+      const end = new Date(year, month - 1, day, 23, 59, 59, 999);
       where.dateTime = { gte: start, lte: end };
     }
 
@@ -51,11 +53,11 @@ export const appointmentRepository = {
     return prisma.appointment.findUnique({ where: { id }, include });
   },
 
-  create(data: { patientId: string; therapistId: string; dateTime: Date; room?: string; notes?: string }) {
+  create(data: { patientId: string; therapistId: string; dateTime: Date; roomId?: string; treatmentPlanId?: string; notes?: string }) {
     return prisma.appointment.create({ data, include });
   },
 
-  update(id: string, data: { dateTime?: Date; status?: string; room?: string; notes?: string }) {
+  update(id: string, data: { dateTime?: Date; status?: string; roomId?: string | null; treatmentPlanId?: string | null; notes?: string }) {
     return prisma.appointment.update({ where: { id }, data, include });
   },
 
@@ -63,7 +65,6 @@ export const appointmentRepository = {
     return prisma.appointment.delete({ where: { id } });
   },
 
-  // Citas SCHEDULED en las próximas 24h que aún no recibieron recordatorio.
   findDueForReminder() {
     const now = new Date();
     const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);

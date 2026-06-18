@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Patient, Routine, Feedback, Role, ActivityTemplate, RoutineAssignment, AssignmentFrequency, AssignmentStatus } from '../types';
-import { setAuthToken } from '../services/api';
+import { setAuthToken, setRefreshToken, registerAuthHandlers } from '../services/api';
 import { authApi, type AuthUser } from '../services/auth.api';
 import { patientsApi } from '../services/patients.api';
 import { routinesApi } from '../services/routines.api';
@@ -10,33 +10,33 @@ import { activityTemplatesApi } from '../services/activityTemplates.api';
 import { routineAssignmentsApi } from '../services/routineAssignments.api';
 
 interface AppState {
-  // Auth
+
   isAuthenticated: boolean;
   token: string | null;
+  refreshToken: string | null;
   authUser: AuthUser | null;
 
-  // Campos mantenidos por compatibilidad con componentes existentes
   role: Role;
   currentUser: string | null;
 
-  // Datos de la aplicación
   patients: Patient[];
   routines: Routine[];
   feedbacks: Feedback[];
   activityTemplates: ActivityTemplate[];
   routineAssignments: RoutineAssignment[];
 
-  // Acciones de auth
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
-  applySession: (token: string, user: AuthUser) => Promise<void>;
+  applySession: (token: string, user: AuthUser, refreshToken?: string) => Promise<void>;
   logout: () => void;
+  giveAudioConsent: () => Promise<void>;
+  updateProfile: (data: { phone?: string; avatarUrl?: string }) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<void>;
 
-  // Carga de datos
   loadData: () => Promise<void>;
 
-  // Acciones de dominio (sincronizan con la API)
   markRoutineComplete: (routineId: string) => Promise<void>;
+  markRoutineCompletedLocally: (routineId: string) => void;
   addFeedback: (data: {
     routineId?:     string;
     patientId:      string;
@@ -78,6 +78,7 @@ export const useStore = create<AppState>()(
     (set, get) => ({
       isAuthenticated: false,
       token: null,
+      refreshToken: null,
       authUser: null,
       role: 'PATIENT',
       currentUser: null,
@@ -88,28 +89,22 @@ export const useStore = create<AppState>()(
       routineAssignments: [],
 
       login: async (email, password) => {
-        const { token, user } = await authApi.login(email, password);
-        setAuthToken(token);
-        set({
-          isAuthenticated: true,
-          token,
-          authUser: user,
-          role: user.role,
-          currentUser: user.id,
-        });
-        await get().loadData();
+        const { token, refreshToken, user } = await authApi.login(email, password);
+        await get().applySession(token, user, refreshToken);
       },
 
       signup: async (name, email, password) => {
-        const { token, user } = await authApi.signup(name, email, password);
-        await get().applySession(token, user);
+        const { token, refreshToken, user } = await authApi.signup(name, email, password);
+        await get().applySession(token, user, refreshToken);
       },
 
-      applySession: async (token, user) => {
+      applySession: async (token, user, refreshToken) => {
         setAuthToken(token);
+        if (refreshToken) setRefreshToken(refreshToken);
         set({
           isAuthenticated: true,
           token,
+          refreshToken: refreshToken ?? get().refreshToken,
           authUser: user,
           role: user.role,
           currentUser: user.id,
@@ -118,12 +113,14 @@ export const useStore = create<AppState>()(
       },
 
       logout: () => {
-        // Invalida el token en el servidor (no bloquea el cierre de sesión local).
-        authApi.logout().catch(() => { /* el token podría ya haber expirado */ });
+
+        authApi.logout(get().refreshToken).catch(() => {  });
         setAuthToken(null);
+        setRefreshToken(null);
         set({
           isAuthenticated: false,
           token: null,
+          refreshToken: null,
           authUser: null,
           role: 'PATIENT',
           currentUser: null,
@@ -133,6 +130,21 @@ export const useStore = create<AppState>()(
           activityTemplates: [],
           routineAssignments: [],
         });
+      },
+
+      giveAudioConsent: async () => {
+        const { audioConsentAt } = await authApi.giveConsent();
+        set(state => ({ authUser: state.authUser ? { ...state.authUser, audioConsentAt } : state.authUser }));
+      },
+
+      updateProfile: async (data) => {
+        const updated = await authApi.updateProfile(data);
+        set(state => ({ authUser: state.authUser ? { ...state.authUser, ...updated } : state.authUser }));
+      },
+
+      uploadAvatar: async (file) => {
+        const updated = await authApi.uploadAvatar(file);
+        set(state => ({ authUser: state.authUser ? { ...state.authUser, ...updated } : state.authUser }));
       },
 
       loadData: async () => {
@@ -152,6 +164,12 @@ export const useStore = create<AppState>()(
         const updated = await routinesApi.markComplete(routineId);
         set(state => ({
           routines: state.routines.map(r => r.id === routineId ? { ...r, ...updated } : r),
+        }));
+      },
+
+      markRoutineCompletedLocally: (routineId) => {
+        set(state => ({
+          routines: state.routines.map(r => r.id === routineId ? { ...r, completed: true } : r),
         }));
       },
 
@@ -205,7 +223,7 @@ export const useStore = create<AppState>()(
       createAssignment: async (data) => {
         const created = await routineAssignmentsApi.create(data);
         set(state => ({ routineAssignments: [created, ...state.routineAssignments] }));
-        // Recargar rutinas para que el paciente vea la nueva asignación
+
         const routines = await routinesApi.getAll();
         set({ routines });
       },
@@ -221,6 +239,7 @@ export const useStore = create<AppState>()(
       name: 'fisiomanager-storage',
       partialize: (state) => ({
         token: state.token,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
         authUser: state.authUser,
         role: state.role,
@@ -228,7 +247,17 @@ export const useStore = create<AppState>()(
       }),
       onRehydrateStorage: () => (state) => {
         if (state?.token) setAuthToken(state.token);
+        if (state?.refreshToken) setRefreshToken(state.refreshToken);
       },
     }
   )
 );
+
+registerAuthHandlers({
+  onTokensRefreshed: (token, refreshToken) => {
+    useStore.setState({ token, refreshToken });
+  },
+  onSessionExpired: () => {
+    useStore.getState().logout();
+  },
+});

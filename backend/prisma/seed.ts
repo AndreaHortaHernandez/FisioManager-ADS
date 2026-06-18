@@ -205,6 +205,19 @@ async function main() {
   });
   console.log('💬 Feedback creado');
 
+  // ── Salas de la clínica ───────────────────────────────────────────
+  const room1 = await prisma.room.upsert({
+    where: { id: 'room-1' },
+    update: {},
+    create: { id: 'room-1', name: 'Sala 1', location: 'Planta baja', capacity: 2, equipment: 'Camilla, banda elástica' },
+  });
+  await prisma.room.upsert({
+    where: { id: 'room-2' },
+    update: {},
+    create: { id: 'room-2', name: 'Sala 2', location: 'Primer piso', capacity: 1, equipment: 'Espejo, pesas' },
+  });
+  console.log('🚪 Salas creadas');
+
   // ── Citas de ejemplo ─────────────────────────────────────────────
   const today = new Date();
   const tomorrow = new Date(today);
@@ -219,6 +232,7 @@ async function main() {
       therapistId: therapist.id,
       dateTime: new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9, 0),
       status: 'SCHEDULED',
+      roomId: room1.id,
       notes: 'Sesión de rehabilitación de rodilla — semana 3',
     },
   });
@@ -293,9 +307,38 @@ async function main() {
       historyId: history.id,
       authorId: therapist.id,
       content: 'Paciente con buena adherencia al tratamiento. Continuar fortalecimiento de cuádriceps.',
+      isVisible: true,
     },
   });
   console.log('🩺 Historial clínico de ejemplo creado');
+
+  // ── Plan de tratamiento de ejemplo ────────────────────────────────
+  const plan = await prisma.treatmentPlan.upsert({
+    where: { id: 'plan-1' },
+    update: {},
+    create: {
+      id: 'plan-1',
+      patientId: michael.id,
+      therapistId: therapist.id,
+      name: 'Rehabilitación post-quirúrgica de rodilla',
+      clinicalGoal: 'Recuperar rango de movimiento y fuerza tras reemplazo de rodilla',
+      startDate: new Date(today.getFullYear(), today.getMonth(), 1),
+      status: 'ACTIVE',
+    },
+  });
+  await prisma.treatmentPhase.upsert({
+    where: { id: 'phase-1' },
+    update: {},
+    create: {
+      id: 'phase-1',
+      planId: plan.id,
+      name: 'Fase 1 — Movilidad inicial',
+      order: 1,
+      durationWeeks: 4,
+      objectives: 'Reducir inflamación y recuperar flexión básica de rodilla',
+    },
+  });
+  console.log('🗂️  Plan de tratamiento de ejemplo creado');
 
   console.log('\n✅ Seed completado.\n');
   console.log('Cuentas de prueba:');

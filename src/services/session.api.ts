@@ -5,7 +5,7 @@ export interface SessionExercise {
   sessionId: string;
   activityId: string;
   order: number;
-  status: 'COMPLETED' | 'SKIPPED';
+  status: 'COMPLETED' | 'SKIPPED' | 'NOT_COMPLETED';
 }
 
 export interface Session {
@@ -23,7 +23,7 @@ export const sessionApi = {
   start: (routineId: string) =>
     api.post<Session>('/sesiones', { routineId }),
 
-  trackExercise: (sessionId: string, data: { activityId: string; order: number; status: 'COMPLETED' | 'SKIPPED' }) =>
+  trackExercise: (sessionId: string, data: { activityId: string; order: number; status: 'COMPLETED' | 'SKIPPED' | 'NOT_COMPLETED' }) =>
     api.patch<SessionExercise>(`/sesiones/${sessionId}/ejercicios`, data),
 
   finalize: (sessionId: string) =>

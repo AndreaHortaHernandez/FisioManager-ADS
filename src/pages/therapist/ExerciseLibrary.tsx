@@ -71,7 +71,6 @@ export function ExerciseLibrary() {
   const [activeBodyPart, setActiveBodyPart] = useState<BodyPart | 'ALL'>('ALL');
   const [modalOpen, setModalOpen] = useState(false);
 
-  // Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<'PHYSICAL' | 'BREATHING'>('PHYSICAL');
@@ -133,7 +132,7 @@ export function ExerciseLibrary() {
         </Button>
       </header>
 
-      {/* ── Sección 1: Ejercicios Físicos ───────────────────────────────── */}
+      {}
       <section>
         <div className="flex items-center gap-3 mb-5">
           <Dumbbell size={22} className="text-primary" />
@@ -141,7 +140,7 @@ export function ExerciseLibrary() {
           <span className="text-sm text-on-surface-variant">({physical.length})</span>
         </div>
 
-        {/* Filtros por parte del cuerpo */}
+        {}
         {physical.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
             <button
@@ -175,7 +174,7 @@ export function ExerciseLibrary() {
         )}
       </section>
 
-      {/* ── Sección 2: Meditación y Respiración ─────────────────────────── */}
+      {}
       <section>
         <div className="flex items-center gap-3 mb-5">
           <Wind size={22} className="text-tertiary" />
@@ -196,7 +195,7 @@ export function ExerciseLibrary() {
         )}
       </section>
 
-      {/* ── Modal: Crear ejercicio ───────────────────────────────────────── */}
+      {}
       <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Nuevo Ejercicio">
         <div className="space-y-4">
           <Input label="Título" value={title} onChange={e => setTitle(e.target.value)} placeholder="ej. Extensión de rodilla" />
@@ -243,7 +242,7 @@ export function ExerciseLibrary() {
             </div>
           )}
 
-          {/* Upload de imagen */}
+          {}
           <div>
             <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">Imagen</label>
             <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={e => setImageFile(e.target.files?.[0] ?? null)} />
@@ -261,7 +260,7 @@ export function ExerciseLibrary() {
             )}
           </div>
 
-          {/* Upload de video */}
+          {}
           <div>
             <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">Video (opcional)</label>
             <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={e => setVideoFile(e.target.files?.[0] ?? null)} />

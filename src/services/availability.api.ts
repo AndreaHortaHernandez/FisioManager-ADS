@@ -2,9 +2,9 @@ import { api } from './api';
 
 export interface AvailabilitySlot {
   id?: string;
-  dayOfWeek: number; // 0=Dom ... 6=Sáb
-  startTime: string; // "HH:MM"
-  endTime: string;   // "HH:MM"
+  dayOfWeek: number; 
+  startTime: string; 
+  endTime: string;   
 }
 
 export const availabilityApi = {

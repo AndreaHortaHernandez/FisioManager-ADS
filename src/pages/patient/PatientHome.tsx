@@ -4,6 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { useStore } from '../../store/useStore';
 import { PlayCircle, Calendar, ShieldCheck, Flame, Clock, Stethoscope } from 'lucide-react';
 import { progressApi, type PatientProgress, type ProximaCita } from '../../services/progress.api';
+import { resolveUploadUrl } from '../../utils/url';
 
 export function PatientHome() {
   const navigate = useNavigate();
@@ -18,10 +19,16 @@ export function PatientHome() {
   const activeRoutines = routines.filter(r => !r.completed);
 
   const [progress, setProgress]   = useState<PatientProgress | null>(null);
+  const [progressError, setProgressError] = useState('');
   const [proxCita, setProxCita]   = useState<ProximaCita | null | undefined>(undefined);
 
+  function loadProgress() {
+    setProgressError('');
+    progressApi.getProgreso().then(setProgress).catch(e => setProgressError((e as Error).message));
+  }
+
   useEffect(() => {
-    progressApi.getProgreso().then(setProgress).catch(() => {});
+    loadProgress();
     progressApi.getProximaCita().then(setProxCita).catch(() => setProxCita(null));
   }, []);
 
@@ -34,7 +41,7 @@ export function PatientHome() {
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Header */}
+      {}
       <div className="flex justify-between items-center mt-4">
         <div>
           <p className="text-sm font-body text-on-surface-variant mb-1">Buenos días,</p>
@@ -43,8 +50,8 @@ export function PatientHome() {
           </h1>
         </div>
         <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-surface-container-lowest shadow-ambient">
-          {currentUser?.avatarUrl ? (
-            <img src={currentUser.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+          {resolveUploadUrl(authUser?.avatarUrl) ? (
+            <img src={resolveUploadUrl(authUser?.avatarUrl)} alt="Avatar" className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full bg-primary-container flex items-center justify-center font-bold text-primary">
               {displayName.charAt(0)}
@@ -53,7 +60,7 @@ export function PatientHome() {
         </div>
       </div>
 
-      {/* Weekly Goal + Streak */}
+      {}
       <Card className="flex items-center justify-between shadow-ambient relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-32 h-32 bg-secondary-container rounded-full filter blur-2xl opacity-20 group-hover:scale-110 transition-transform duration-500" />
         <div className="z-10 flex-1">
@@ -61,7 +68,9 @@ export function PatientHome() {
           <p className="text-sm text-on-surface-variant mb-3">
             {weekly
               ? `${weekly.completed} de ${weekly.target} sesiones esta semana`
-              : 'Cargando...'}
+              : progressError
+                ? <button onClick={loadProgress} className="underline">No se pudo cargar — reintentar</button>
+                : 'Cargando...'}
           </p>
           <div className="flex gap-2 flex-wrap">
             <span className="bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1 rounded-full text-xs font-bold">
@@ -79,7 +88,7 @@ export function PatientHome() {
         </div>
       </Card>
 
-      {/* Próxima cita */}
+      {}
       {proxCita && (
         <Card level={2} className="flex items-center gap-4 border-ghost">
           <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
@@ -96,7 +105,7 @@ export function PatientHome() {
         </Card>
       )}
 
-      {/* Today's Plan */}
+      {}
       <div>
         <h3 className="text-lg font-display font-bold mb-4 flex items-center gap-2">
           <Calendar size={20} className="text-primary" />

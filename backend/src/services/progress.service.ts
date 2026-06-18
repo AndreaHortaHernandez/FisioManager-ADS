@@ -70,7 +70,6 @@ export const progressService = {
       ? Math.round((recent.reduce((s, f) => s + f.painLevel, 0) / recent.length) * 10) / 10
       : null;
 
-    // AI insight — no bloquea si Ollama no está disponible
     const aiInsight = await generateProgressInsight(
       streak,
       weeklyCompleted,

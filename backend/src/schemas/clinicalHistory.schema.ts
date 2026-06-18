@@ -21,5 +21,10 @@ export const updateDiagnosisSchema = z
   .refine(d => Object.keys(d).length > 0, { message: 'No hay campos para actualizar' });
 
 export const createNoteSchema = z.object({
-  content: z.string().min(1),
+  content:   z.string().min(1),
+  isVisible: z.boolean().optional(),
+});
+
+export const updateNoteVisibilitySchema = z.object({
+  isVisible: z.boolean(),
 });

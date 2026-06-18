@@ -1,6 +1,6 @@
 
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Activity, Heart, User, LogOut } from 'lucide-react';
+import { Home, Activity, Heart, User, Settings, LogOut } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useStore } from '../../store/useStore';
 
@@ -14,20 +14,21 @@ export function PatientLayout() {
     { label: 'Routines', path: '/patient/routines', icon: Activity },
     { label: 'Wellness', path: '/patient/wellness', icon: Heart },
     { label: 'Profile', path: '/patient/progress', icon: User },
+    { label: 'Settings', path: '/patient/settings', icon: Settings },
   ];
 
   return (
     <div className="min-h-screen bg-background flex flex-col max-w-md mx-auto relative overflow-hidden">
-      {/* Top ambient decor */}
+      {}
       <div className="absolute top-[-100px] left-[-100px] w-64 h-64 bg-primary-fixed-dim rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none" />
       <div className="absolute top-[50px] right-[-50px] w-48 h-48 bg-secondary-fixed-dim rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none" />
 
-      {/* Main Content Area */}
+      {}
       <main className="flex-1 overflow-y-auto pb-24 relative z-10 p-6 space-y-8">
         <Outlet />
       </main>
 
-      {/* Bottom Navigation */}
+      {}
       <nav className="fixed bottom-0 left-0 right-0 glass z-50">
         <div className="max-w-md mx-auto px-6 py-4 flex justify-between items-center text-on-surface-variant">
           {navItems.map((item) => {

@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Plus, User, Mail, Phone, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, User, Mail, Phone, ToggleLeft, ToggleRight, Trash2, Pencil } from 'lucide-react';
 import { adminApi, type UserRow } from '../../services/admin.api';
 import type { Therapist } from '../../types';
+import { AvatarUploadField } from '../../components/AvatarUploadField';
+import { resolveUploadUrl } from '../../utils/url';
 
 const roleLabel: Record<UserRow['role'], string> = {
   PATIENT: 'Paciente',
@@ -16,6 +18,12 @@ const emptyForm = {
   cedula: '', especialidad: '',
 };
 
+const emptyEditForm = {
+  name: '', phone: '',
+  age: '', condition: '', therapistId: '',
+  cedula: '', especialidad: '',
+};
+
 export function AdminUsers() {
   const [users, setUsers] = useState<UserRow[]>([]);
   const [therapists, setTherapists] = useState<Therapist[]>([]);
@@ -23,6 +31,10 @@ export function AdminUsers() {
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  const [editingUser, setEditingUser] = useState<UserRow | null>(null);
+  const [editForm, setEditForm] = useState(emptyEditForm);
+  const [editError, setEditError] = useState('');
 
   function reload() {
     adminApi.getAllUsers().then(setUsers);
@@ -68,6 +80,67 @@ export function AdminUsers() {
   async function handleToggle(u: UserRow) {
     const updated = await adminApi.toggleActive(u.id);
     setUsers(prev => prev.map(x => x.id === u.id ? { ...x, isActive: updated.isActive } : x));
+  }
+
+  function openEdit(u: UserRow) {
+    setEditingUser(u);
+    setEditError('');
+    setEditForm({
+      name: u.name,
+      phone: u.phone ?? '',
+      age: u.patientProfile?.age ? String(u.patientProfile.age) : '',
+      condition: u.patientProfile?.condition ?? '',
+      therapistId: u.patientProfile?.therapistId ?? '',
+      cedula: u.therapistProfile?.cedula ?? '',
+      especialidad: u.therapistProfile?.especialidad ?? '',
+    });
+  }
+
+  async function handleAvatarUpload(file: File) {
+    if (!editingUser) return;
+    const updated = await adminApi.uploadUserAvatar(editingUser.id, file);
+    setUsers(prev => prev.map(x => x.id === updated.id ? updated : x));
+    setEditingUser(updated);
+  }
+
+  async function handleEditSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingUser) return;
+    setEditError('');
+    try {
+      const data: Parameters<typeof adminApi.updateUser>[1] = {
+        name: editForm.name, phone: editForm.phone || undefined,
+      };
+      if (editingUser.role === 'PATIENT') {
+        data.age = editForm.age ? Number(editForm.age) : undefined;
+        data.condition = editForm.condition || undefined;
+        data.therapistId = editForm.therapistId || undefined;
+      } else if (editingUser.role === 'THERAPIST') {
+        data.cedula = editForm.cedula || undefined;
+        data.especialidad = editForm.especialidad || undefined;
+      }
+      const updated = await adminApi.updateUser(editingUser.id, data);
+      setUsers(prev => prev.map(x => x.id === updated.id ? updated : x));
+      setEditingUser(null);
+    } catch (e: unknown) {
+      setEditError((e as Error).message);
+    }
+  }
+
+  const ef = (k: keyof typeof emptyEditForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setEditForm(prev => ({ ...prev, [k]: e.target.value }));
+
+  async function handleDeletePermanently(u: UserRow) {
+    const confirmed = window.confirm(
+      `¿Eliminar permanentemente a ${u.name} y todos sus datos asociados? Esta acción no se puede deshacer.`,
+    );
+    if (!confirmed) return;
+    try {
+      await adminApi.deleteUserPermanently(u.id);
+      setUsers(prev => prev.filter(x => x.id !== u.id));
+    } catch (e) {
+      setError((e as Error).message);
+    }
   }
 
   const f = (k: keyof typeof emptyForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -170,6 +243,80 @@ export function AdminUsers() {
         </div>
       )}
 
+      {editingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-display font-bold mb-4">Editar {roleLabel[editingUser.role]}</h2>
+            <form onSubmit={handleEditSubmit} className="space-y-3">
+              <div>
+                <label className="text-sm text-on-surface-variant mb-1 block">Nombre completo</label>
+                <input required type="text" value={editForm.name} onChange={ef('name')}
+                  className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
+              </div>
+              <div>
+                <label className="text-sm text-on-surface-variant mb-1 block">Teléfono</label>
+                <input type="tel" value={editForm.phone} onChange={ef('phone')}
+                  className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
+              </div>
+              <div>
+                <label className="text-sm text-on-surface-variant mb-1 block">Foto de perfil</label>
+                <AvatarUploadField avatarUrl={editingUser.avatarUrl} name={editingUser.name} onUpload={handleAvatarUpload} />
+              </div>
+
+              {editingUser.role === 'PATIENT' && (
+                <>
+                  <div>
+                    <label className="text-sm text-on-surface-variant mb-1 block">Edad</label>
+                    <input type="number" value={editForm.age} onChange={ef('age')}
+                      className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-sm text-on-surface-variant mb-1 block">Padecimiento / Diagnóstico</label>
+                    <input type="text" value={editForm.condition} onChange={ef('condition')}
+                      className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-sm text-on-surface-variant mb-1 block">Terapeuta asignado</label>
+                    <select value={editForm.therapistId} onChange={ef('therapistId')}
+                      className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm">
+                      <option value="">Sin cambios</option>
+                      {therapists.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {editingUser.role === 'THERAPIST' && (
+                <>
+                  <div>
+                    <label className="text-sm text-on-surface-variant mb-1 block">Cédula</label>
+                    <input type="text" value={editForm.cedula} onChange={ef('cedula')}
+                      className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
+                  </div>
+                  <div>
+                    <label className="text-sm text-on-surface-variant mb-1 block">Especialidad</label>
+                    <input type="text" value={editForm.especialidad} onChange={ef('especialidad')}
+                      className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
+                  </div>
+                </>
+              )}
+
+              {editError && <p className="text-sm text-error">{editError}</p>}
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => setEditingUser(null)}
+                  className="flex-1 py-2.5 rounded-xl border border-surface-container-high text-sm hover:bg-surface-container transition-colors">
+                  Cancelar
+                </button>
+                <button type="submit"
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition-opacity">
+                  Guardar cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="bg-surface-container rounded-2xl overflow-hidden">
         <table className="w-full">
           <thead>
@@ -178,18 +325,19 @@ export function AdminUsers() {
               <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Contacto</th>
               <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Rol</th>
               <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Estado</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 && (
-              <tr><td colSpan={4} className="p-8 text-center text-on-surface-variant">Sin usuarios registrados</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">Sin usuarios registrados</td></tr>
             )}
             {users.map(u => (
               <tr key={u.id} className="border-b border-surface-container-high last:border-0 hover:bg-surface transition-colors">
                 <td className="p-4">
                   <div className="flex items-center gap-3">
-                    {u.avatarUrl
-                      ? <img src={u.avatarUrl} className="w-9 h-9 rounded-full object-cover" alt="" />
+                    {resolveUploadUrl(u.avatarUrl)
+                      ? <img src={resolveUploadUrl(u.avatarUrl)} className="w-9 h-9 rounded-full object-cover" alt="" />
                       : <div className="w-9 h-9 rounded-full bg-primary-container flex items-center justify-center"><User size={16} className="text-primary" /></div>
                     }
                     <span className="font-medium">{u.name}</span>
@@ -213,6 +361,22 @@ export function AdminUsers() {
                       }
                     </button>
                   )}
+                </td>
+                <td className="p-4">
+                  <div className="flex items-center gap-3">
+                    {u.role !== 'ADMIN' && (
+                      <button onClick={() => openEdit(u)} title="Editar"
+                        className="text-on-surface-variant hover:text-primary transition-colors">
+                        <Pencil size={16} />
+                      </button>
+                    )}
+                    {u.role !== 'ADMIN' && (
+                      <button onClick={() => handleDeletePermanently(u)} title="Eliminar permanentemente"
+                        className="text-on-surface-variant hover:text-error transition-colors">
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}

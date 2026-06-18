@@ -43,10 +43,36 @@ export const clinicalHistoryRepository = {
     return prisma.diagnosis.update({ where: { id }, data });
   },
 
-  createNote(historyId: string, authorId: string, content: string) {
+  createNote(historyId: string, authorId: string, content: string, isVisible = false) {
     return prisma.clinicalNote.create({
-      data: { historyId, authorId, content },
+      data: { historyId, authorId, content, isVisible },
       include: { author: noteAuthorSelect },
+    });
+  },
+
+  findNoteById(id: string) {
+    return prisma.clinicalNote.findUnique({ where: { id } });
+  },
+
+  updateNoteVisibility(id: string, isVisible: boolean) {
+    return prisma.clinicalNote.update({
+      where: { id },
+      data: { isVisible },
+      include: { author: noteAuthorSelect },
+    });
+  },
+
+  findByPatientIdForPatient(patientId: string) {
+    return prisma.clinicalHistory.findUnique({
+      where: { patientId },
+      include: {
+        diagnoses: { orderBy: { createdAt: 'desc' as const } },
+        notes: {
+          where: { isVisible: true },
+          orderBy: { createdAt: 'desc' as const },
+          include: { author: noteAuthorSelect },
+        },
+      },
     });
   },
 };

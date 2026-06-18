@@ -12,16 +12,20 @@ export const appointmentsApi = {
     return api.get<Appointment[]>(`/appointments${qs ? `?${qs}` : ''}`);
   },
 
-  create(data: { patientId: string; therapistId: string; dateTime: string; room?: string; notes?: string }) {
+  create(data: { patientId: string; therapistId: string; dateTime: string; roomId?: string; treatmentPlanId?: string; notes?: string }) {
     return api.post<Appointment>('/appointments', data);
   },
 
-  update(id: string, data: { dateTime?: string; status?: string; room?: string; notes?: string }) {
+  update(id: string, data: { dateTime?: string; status?: string; roomId?: string | null; treatmentPlanId?: string | null; notes?: string }) {
     return api.patch<Appointment>(`/appointments/${id}`, data);
   },
 
   cancel(id: string) {
     return api.patch<Appointment>(`/appointments/${id}/cancel`, {});
+  },
+
+  confirm(id: string) {
+    return api.patch<Appointment>(`/appointments/${id}/confirm`, {});
   },
 
   sendReminder(id: string) {

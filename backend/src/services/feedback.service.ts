@@ -1,6 +1,7 @@
 import { feedbackRepository } from '../repositories/feedback.repository';
 import { notificationService } from './notification.service';
 import { AppError } from '../errors/AppError';
+import { logger } from '../lib/logger';
 
 export const feedbackService = {
   async getForUser(userId: string, role: string) {
@@ -40,10 +41,9 @@ export const feedbackService = {
     }
     const feedback = await feedbackRepository.create(data);
 
-    // Alerta al terapeuta si el dolor es alto — no bloquea la respuesta.
     notificationService
       .alertHighPain(data.patientId, data.painLevel, data.emotionalState)
-      .catch(err => console.error('[Notif] Error en alerta de dolor alto:', err));
+      .catch(err => logger.error('high_pain_alert_failed', { patientId: data.patientId, error: err.message }));
 
     return feedback;
   },

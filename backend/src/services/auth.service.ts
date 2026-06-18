@@ -1,16 +1,28 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { randomBytes } from 'crypto';
 import { userRepository } from '../repositories/user.repository';
 import { tokenRepository } from '../repositories/token.repository';
+import { refreshTokenRepository } from '../repositories/refreshToken.repository';
 import { emailService } from './email.service';
 import { AppError } from '../errors/AppError';
+import { logger } from '../lib/logger';
+
+const ACCESS_TOKEN_TTL = '60m';
+const REFRESH_TOKEN_TTL_MS = 7 * 86_400_000; 
 
 function signToken(userId: string, role: string, name: string): string {
   return jwt.sign(
     { sub: userId, role, name },
     process.env.JWT_SECRET!,
-    { expiresIn: '7d' }
+    { expiresIn: ACCESS_TOKEN_TTL }
   );
+}
+
+async function issueRefreshToken(userId: string): Promise<string> {
+  const token = randomBytes(48).toString('hex');
+  await refreshTokenRepository.create(userId, token, new Date(Date.now() + REFRESH_TOKEN_TTL_MS));
+  return token;
 }
 
 function sanitize<T extends { password: string }>(user: T) {
@@ -28,11 +40,10 @@ export const authService = {
     if (!valid) throw new AppError('Credenciales inválidas', 401);
 
     const token = signToken(user.id, user.role, user.name);
-    return { token, user: sanitize(user) };
+    const refreshToken = await issueRefreshToken(user.id);
+    return { token, refreshToken, user: sanitize(user) };
   },
 
-  // Auto-registro público (rol PACIENTE). La cuenta queda activa de inmediato
-  // y se devuelve una sesión (auto-login), sin verificación por correo.
   async signup(data: { name: string; email: string; password: string }) {
     const exists = await userRepository.findByEmail(data.email);
     if (exists) throw new AppError('El email ya está registrado', 409);
@@ -46,7 +57,8 @@ export const authService = {
     });
 
     const token = signToken(user.id, user.role, user.name);
-    return { token, user: sanitize(user) };
+    const refreshToken = await issueRefreshToken(user.id);
+    return { token, refreshToken, user: sanitize(user) };
   },
 
   async register(data: {
@@ -64,7 +76,8 @@ export const authService = {
     const user = await userRepository.create({ ...data, password: hashed });
 
     const token = signToken(user.id, user.role, user.name);
-    return { token, user: sanitize(user) };
+    const refreshToken = await issueRefreshToken(user.id);
+    return { token, refreshToken, user: sanitize(user) };
   },
 
   async getProfile(userId: string) {
@@ -73,15 +86,28 @@ export const authService = {
     return sanitize(user);
   },
 
-  // Invalida el token actual guardándolo en la lista de revocados.
-  async logout(token: string) {
+  async refresh(refreshToken: string) {
+    const stored = await refreshTokenRepository.findValid(refreshToken);
+    if (!stored) throw new AppError('Refresh token inválido o expirado', 401);
+
+    const user = await userRepository.findById(stored.userId);
+    if (!user || !user.isActive) throw new AppError('Usuario no encontrado o inactivo', 401);
+
+    await refreshTokenRepository.deleteByToken(refreshToken);
+
+    const token = signToken(user.id, user.role, user.name);
+    const newRefreshToken = await issueRefreshToken(user.id);
+    return { token, refreshToken: newRefreshToken };
+  },
+
+  async logout(token: string, refreshToken?: string) {
     const decoded = jwt.decode(token) as { exp?: number } | null;
-    const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 7 * 86_400_000);
+    const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000) : new Date(Date.now() + 86_400_000);
     await tokenRepository.revoke(token, expiresAt);
+    if (refreshToken) await refreshTokenRepository.deleteByToken(refreshToken);
     return { message: 'Sesión cerrada correctamente' };
   },
 
-  // Envía un correo de recuperación. No revela si el email existe.
   async requestRecovery(email: string) {
     const user = await userRepository.findByEmail(email);
 
@@ -96,7 +122,7 @@ export const authService = {
 
       emailService
         .sendPasswordRecovery({ name: user.name, email: user.email, resetUrl, token: resetToken })
-        .catch(err => console.error('[Email] Error al enviar recuperación:', err));
+        .catch(err => logger.error('password_recovery_email_failed', { userId: user.id, error: err.message }));
     }
 
     return { message: 'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.' };
@@ -118,5 +144,28 @@ export const authService = {
     await userRepository.updatePassword(user.id, hashed);
 
     return { message: 'Contraseña actualizada correctamente' };
+  },
+
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await userRepository.findById(userId);
+    if (!user) throw new AppError('Usuario no encontrado', 404);
+
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) throw new AppError('La contraseña actual es incorrecta', 401);
+
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await userRepository.updatePassword(user.id, hashed);
+
+    return { message: 'Contraseña actualizada correctamente' };
+  },
+
+  async giveAudioConsent(userId: string) {
+    const user = await userRepository.setAudioConsent(userId, new Date());
+    return { audioConsentAt: user.audioConsentAt };
+  },
+
+  async updateProfile(userId: string, data: { phone?: string; avatarUrl?: string }) {
+    const user = await userRepository.updateProfile(userId, data);
+    return sanitize(user);
   },
 };

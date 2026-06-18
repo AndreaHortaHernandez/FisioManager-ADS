@@ -21,10 +21,10 @@ export const createAssignment = catchAsync(async (req: Request, res: Response) =
   created(res, assignment);
 });
 
-export const updateAssignmentStatus = catchAsync(async (req: Request, res: Response) => {
-  const assignment = await routineAssignmentService.updateStatus(
+export const updateAssignment = catchAsync(async (req: Request, res: Response) => {
+  const assignment = await routineAssignmentService.update(
     req.params.id,
-    req.body.status,
+    req.body,
     req.user!.id,
   );
   ok(res, assignment);

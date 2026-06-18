@@ -65,7 +65,7 @@ export function WellnessView() {
         <p className="text-on-surface-variant font-body text-sm">Ejercicios de respiración y relajación.</p>
       </header>
 
-      {/* Check-in CTA */}
+      {}
       <Card
         level={2}
         className="flex items-center gap-4 border-ghost cursor-pointer hover:bg-surface-container transition-colors"
@@ -81,17 +81,17 @@ export function WellnessView() {
         <span className="text-on-surface-variant text-lg">›</span>
       </Card>
 
-      {/* Breathing guide */}
+      {}
       <Card className="flex flex-col items-center py-8 gap-6 border-ghost relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
 
         <div className="relative flex items-center justify-center w-40 h-40">
-          {/* Outer pulse ring */}
+          {}
           <div className={cn(
             'absolute rounded-full border-2 border-primary/20 transition-all duration-1000',
             isExpanded ? 'w-40 h-40 opacity-100' : 'w-24 h-24 opacity-0'
           )} />
-          {/* Main orb */}
+          {}
           <div className={cn(
             'rounded-full flex items-center justify-center transition-all duration-1000 shadow-ambient',
             isExpanded
@@ -121,7 +121,7 @@ export function WellnessView() {
           )}
         </div>
 
-        {/* Phase indicators */}
+        {}
         {running && (
           <div className="flex gap-2">
             {PHASES.map((p, i) => (
@@ -144,7 +144,7 @@ export function WellnessView() {
         )}
       </Card>
 
-      {/* Breathing templates */}
+      {}
       {breathing.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">
@@ -164,7 +164,7 @@ export function WellnessView() {
         </section>
       )}
 
-      {/* Tips */}
+      {}
       <section className="space-y-3">
         <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Consejos</h2>
         {[

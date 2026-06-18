@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Users, ChevronRight } from 'lucide-react';
+import { resolveUploadUrl } from '../../utils/url';
 
 type RecoveryStatus = 'ON_TRACK' | 'DELAYED' | 'ATTENTION';
 
@@ -59,7 +60,7 @@ export function PatientsList() {
               >
                 <div className="flex items-center gap-4">
                   <img
-                    src={patient.avatarUrl ?? `https://i.pravatar.cc/80?u=${patient.id}`}
+                    src={resolveUploadUrl(patient.avatarUrl) ?? `https://i.pravatar.cc/80?u=${patient.id}`}
                     alt={patient.name}
                     className="w-12 h-12 rounded-full flex-shrink-0"
                   />
@@ -73,7 +74,7 @@ export function PatientsList() {
                     </div>
                     <p className="text-sm text-on-surface-variant truncate mb-2">{patient.condition}</p>
 
-                    {/* Barra de progreso */}
+                    {}
                     <div className="flex items-center gap-3">
                       <div className="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
                         <div

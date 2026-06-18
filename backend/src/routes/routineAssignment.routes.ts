@@ -3,7 +3,7 @@ import {
   getAssignments,
   getAssignmentsByPatient,
   createAssignment,
-  updateAssignmentStatus,
+  updateAssignment,
 } from '../controllers/routineAssignment.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { requireRole } from '../middlewares/role.middleware';
@@ -17,6 +17,6 @@ router.use(authMiddleware);
 router.get('/', requireRole('THERAPIST'), getAssignments);
 router.get('/patient/:patientId', getAssignmentsByPatient);
 router.post('/', requireRole('THERAPIST'), validate(createAssignmentSchema), createAssignment);
-router.patch('/:id', requireRole('THERAPIST'), validate(updateAssignmentSchema), updateAssignmentStatus);
+router.patch('/:id', requireRole('THERAPIST'), validate(updateAssignmentSchema), updateAssignment);
 
 export { router as routineAssignmentRouter };

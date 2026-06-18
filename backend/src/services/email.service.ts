@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { logger } from '../lib/logger';
 
 let transporter: nodemailer.Transporter | null = null;
 
@@ -10,23 +11,21 @@ async function getTransporter() {
     transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port,
-      // 465 usa TLS implícito; 587/25 usan STARTTLS (secure: false).
+
       secure: port === 465,
       auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
     });
 
-    // Verifica la conexión SMTP al arrancar para detectar credenciales malas.
     try {
       await transporter.verify();
-      console.log(`📧 SMTP real conectado: ${process.env.EMAIL_HOST}:${port} (${process.env.EMAIL_USER})`);
+      logger.info('smtp_connected', { host: process.env.EMAIL_HOST, port, user: process.env.EMAIL_USER });
     } catch (err) {
-      console.error('❌ Error de conexión SMTP — revisa EMAIL_HOST/PORT/USER/PASS:', (err as Error).message);
+      logger.error('smtp_connection_failed', { error: (err as Error).message });
     }
   } else {
-    // Sin EMAIL_HOST → envío de correos DESACTIVADO. Transporte no-op:
-    // sendMail no realiza ninguna conexión ni envío real (no genera errores).
+
     transporter = nodemailer.createTransport({ jsonTransport: true });
-    console.log('📭 Envío de correos desactivado (define EMAIL_HOST para activarlo).');
+    logger.info('smtp_disabled', { hint: 'define EMAIL_HOST para activarlo' });
   }
 
   return transporter;
@@ -68,7 +67,7 @@ export const emailService = {
     });
 
     const preview = nodemailer.getTestMessageUrl(info);
-    if (preview) console.log('📬 Vista previa del correo:', preview);
+    if (preview) logger.info('email_preview', { kind: 'appointment_reminder', preview });
 
     return { messageId: info.messageId, preview: preview || null };
   },
@@ -95,7 +94,7 @@ export const emailService = {
     });
 
     const preview = nodemailer.getTestMessageUrl(info);
-    if (preview) console.log('📬 Vista previa (verificación):', preview);
+    if (preview) logger.info('email_preview', { kind: 'email_verification', preview });
     return { messageId: info.messageId, preview: preview || null };
   },
 
@@ -121,7 +120,7 @@ export const emailService = {
     });
 
     const preview = nodemailer.getTestMessageUrl(info);
-    if (preview) console.log('📬 Vista previa (recuperación):', preview);
+    if (preview) logger.info('email_preview', { kind: 'password_recovery', preview });
     return { messageId: info.messageId, preview: preview || null };
   },
 
@@ -154,7 +153,35 @@ export const emailService = {
     });
 
     const preview = nodemailer.getTestMessageUrl(info);
-    if (preview) console.log('📬 Vista previa (alerta dolor):', preview);
+    if (preview) logger.info('email_preview', { kind: 'high_pain_alert', preview });
+    return { messageId: info.messageId, preview: preview || null };
+  },
+
+  async sendRoutineReminder(opts: {
+    patientName: string;
+    patientEmail: string;
+    routineTitle: string;
+  }) {
+    const t = await getTransporter();
+    const info = await t.sendMail({
+      from: `"FisioManager" <${process.env.EMAIL_FROM ?? 'noreply@fisiomanager.com'}>`,
+      to: opts.patientEmail,
+      subject: `Recordatorio de rutina — ${opts.routineTitle}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 24px; border-radius: 12px; border: 1px solid #e0e0e0;">
+          <h2 style="color: #5A67D8; margin-bottom: 4px;">FisioManager</h2>
+          <p style="color: #666; margin-top: 0;">Recordatorio de rutina</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 16px 0;" />
+          <p>Hola <strong>${opts.patientName}</strong>,</p>
+          <p>Es momento de realizar tu rutina de hoy:</p>
+          <p style="font-size: 18px; font-weight: bold; color:#5A67D8; margin: 16px 0;">${opts.routineTitle}</p>
+          <p style="color: #888; font-size: 13px;">Ingresa a la app para comenzar tu sesión.</p>
+        </div>
+      `,
+    });
+
+    const preview = nodemailer.getTestMessageUrl(info);
+    if (preview) logger.info('email_preview', { kind: 'routine_reminder', preview });
     return { messageId: info.messageId, preview: preview || null };
   },
 
@@ -183,7 +210,7 @@ export const emailService = {
     });
 
     const preview = nodemailer.getTestMessageUrl(info);
-    if (preview) console.log('📬 Vista previa (rutina asignada):', preview);
+    if (preview) logger.info('email_preview', { kind: 'routine_assigned', preview });
     return { messageId: info.messageId, preview: preview || null };
   },
 };

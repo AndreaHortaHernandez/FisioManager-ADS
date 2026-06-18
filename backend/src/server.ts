@@ -2,22 +2,22 @@ import 'dotenv/config';
 import { app } from './app';
 import { prisma } from './lib/prisma';
 import { notificationService } from './services/notification.service';
+import { logger } from './lib/logger';
 
 const PORT = process.env.PORT ?? 3001;
 
 async function main() {
   await prisma.$connect();
-  console.log('✅ Base de datos conectada');
+  logger.info('database_connected');
 
   app.listen(PORT, () => {
-    console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+    logger.info('server_started', { port: PORT });
   });
 
-  // Scheduler de recordatorios de cita 24h antes.
   notificationService.startReminderScheduler();
 }
 
 main().catch(err => {
-  console.error('❌ Error al iniciar el servidor:', err);
+  logger.error('server_start_failed', { error: err instanceof Error ? err.message : String(err) });
   process.exit(1);
 });

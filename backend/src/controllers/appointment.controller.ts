@@ -29,6 +29,11 @@ export const cancelAppointment = catchAsync(async (req: Request, res: Response) 
   ok(res, appt);
 });
 
+export const confirmAppointment = catchAsync(async (req: Request, res: Response) => {
+  const appt = await appointmentService.confirm(req.params.id);
+  ok(res, appt);
+});
+
 export const sendReminder = catchAsync(async (req: Request, res: Response) => {
   const result = await appointmentService.sendReminder(req.params.id);
   ok(res, result);

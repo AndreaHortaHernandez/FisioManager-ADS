@@ -30,6 +30,16 @@ export const updateDiagnosis = catchAsync(async (req: Request, res: Response) =>
 });
 
 export const addNote = catchAsync(async (req: Request, res: Response) => {
-  const note = await clinicalHistoryService.addNote(req.params.id, req.user!.id, req.body.content);
+  const note = await clinicalHistoryService.addNote(req.params.id, req.user!.id, req.body.content, req.body.isVisible);
   created(res, note);
+});
+
+export const updateNoteVisibility = catchAsync(async (req: Request, res: Response) => {
+  const note = await clinicalHistoryService.updateNoteVisibility(req.params.id, req.body.isVisible);
+  ok(res, note);
+});
+
+export const getOwnHistory = catchAsync(async (req: Request, res: Response) => {
+  const history = await clinicalHistoryService.getOwnHistory(req.user!.id);
+  ok(res, history);
 });

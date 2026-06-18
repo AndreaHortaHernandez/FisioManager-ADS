@@ -14,7 +14,6 @@ export const tokenRepository = {
     return Boolean(found);
   },
 
-  // Limpia tokens cuya expiración ya pasó (mantenimiento).
   deleteExpired() {
     return prisma.revokedToken.deleteMany({ where: { expiresAt: { lt: new Date() } } });
   },
