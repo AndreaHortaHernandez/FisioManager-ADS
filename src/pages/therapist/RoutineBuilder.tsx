@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -7,20 +8,21 @@ import { Input } from '../../components/ui/Input';
 import type { Activity, ActivityTemplate, BodyPart } from '../../types';
 import { Plus, X, Video, ChevronUp, ChevronDown, Save, Wind } from 'lucide-react';
 
-const BODY_PARTS: { value: BodyPart; label: string }[] = [
-  { value: 'KNEE',     label: 'Rodilla'  },
-  { value: 'BACK',     label: 'Espalda'  },
-  { value: 'SHOULDER', label: 'Hombro'   },
-  { value: 'NECK',     label: 'Cuello'   },
-  { value: 'ARM',      label: 'Brazo'    },
-  { value: 'HIP',      label: 'Cadera'   },
-  { value: 'ANKLE',    label: 'Tobillo'  },
-  { value: 'OTHER',    label: 'Otro'     },
+const BODY_PARTS: { value: BodyPart; labelKey: string }[] = [
+  { value: 'KNEE',     labelKey: 'therapist.bodyPart.knee'     },
+  { value: 'BACK',     labelKey: 'therapist.bodyPart.back'     },
+  { value: 'SHOULDER', labelKey: 'therapist.bodyPart.shoulder' },
+  { value: 'NECK',     labelKey: 'therapist.bodyPart.neck'     },
+  { value: 'ARM',      labelKey: 'therapist.bodyPart.arm'      },
+  { value: 'HIP',      labelKey: 'therapist.bodyPart.hip'      },
+  { value: 'ANKLE',    labelKey: 'therapist.bodyPart.ankle'    },
+  { value: 'OTHER',    labelKey: 'therapist.bodyPart.other'    },
 ];
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
 
 export function RoutineBuilder() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id: editId } = useParams<{ id?: string }>();
   const isEditing = Boolean(editId);
@@ -73,7 +75,7 @@ export function RoutineBuilder() {
 
   const handleSave = async () => {
     if (!routineTitle.trim() || selectedActivities.length === 0) {
-      alert('Agrega un título y al menos una actividad.');
+      alert(t('therapist.builder.validation'));
       return;
     }
     setSaving(true);
@@ -115,28 +117,27 @@ export function RoutineBuilder() {
       <header className="mb-6 flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-display font-bold text-on-surface mb-2">
-            {isEditing ? 'Editar Rutina' : 'Routine Builder'}
+            {isEditing ? t('therapist.builder.titleEdit') : t('therapist.builder.titleNew')}
           </h1>
           <p className="text-on-surface-variant font-body">
-            {isEditing ? 'Modifica el título, tipo y ejercicios.' : 'Crea nuevas plantillas para tu biblioteca.'}
+            {isEditing ? t('therapist.builder.subtitleEdit') : t('therapist.builder.subtitleNew')}
           </p>
         </div>
         <div className="flex gap-3">
           <Button variant="tertiary" onClick={() => navigate('/therapist/routines')}>
-            Cancelar
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleSave} disabled={saving} className="flex gap-2 items-center">
-            <Save size={18} /> {isEditing ? 'Guardar cambios' : 'Guardar en biblioteca'}
+            <Save size={18} /> {isEditing ? t('therapist.builder.saveChanges') : t('therapist.builder.saveToLibrary')}
           </Button>
         </div>
       </header>
 
       <div className="flex-1 flex gap-8 overflow-hidden pb-8">
 
-        {}
         <div className="w-2/3 flex flex-col bg-surface-container-low rounded-2xl border-ghost overflow-hidden">
           <div className="p-4 border-b border-surface-container-high bg-surface-container-lowest space-y-3">
-            <h2 className="font-display font-bold text-lg">Catálogo de Ejercicios</h2>
+            <h2 className="font-display font-bold text-lg">{t('therapist.builder.catalog')}</h2>
 
             <div className="flex gap-2">
               {(['ALL', 'PHYSICAL', 'BREATHING'] as const).map(f => (
@@ -145,7 +146,7 @@ export function RoutineBuilder() {
                   onClick={() => { setCatalogFilter(f); setBodyPartFilter('ALL'); }}
                   className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${catalogFilter === f ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}
                 >
-                  {f === 'ALL' ? 'Todos' : f === 'PHYSICAL' ? 'Físicos' : 'Meditación'}
+                  {f === 'ALL' ? t('therapist.builder.filterAll') : f === 'PHYSICAL' ? t('therapist.builder.filterPhysical') : t('therapist.builder.filterBreathing')}
                 </button>
               ))}
             </div>
@@ -161,7 +162,7 @@ export function RoutineBuilder() {
                     onClick={() => setBodyPartFilter('ALL')}
                     className={`px-3 py-1 rounded-full text-xs transition-colors ${bodyPartFilter === 'ALL' ? 'bg-secondary text-white' : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container'}`}
                   >
-                    Todas las zonas
+                    {t('therapist.builder.allZones')}
                   </button>
                   {BODY_PARTS.filter(bp => usedParts.includes(bp.value)).map(bp => (
                     <button
@@ -169,7 +170,7 @@ export function RoutineBuilder() {
                       onClick={() => setBodyPartFilter(bp.value)}
                       className={`px-3 py-1 rounded-full text-xs transition-colors ${bodyPartFilter === bp.value ? 'bg-secondary text-white' : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-container'}`}
                     >
-                      {bp.label}
+                      {t(bp.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -179,7 +180,7 @@ export function RoutineBuilder() {
 
           <div className="flex-1 overflow-y-auto p-4 grid grid-cols-2 gap-4 content-start">
             {filteredTemplates.map(template => {
-              const bodyPartLabel = BODY_PARTS.find(bp => bp.value === template.bodyPart)?.label;
+              const bodyPartLabelKey = BODY_PARTS.find(bp => bp.value === template.bodyPart)?.labelKey;
               return (
                 <Card key={template.id} level={1} className="p-3 group hover:border-primary border-transparent border transition-all cursor-pointer">
                   <div className="aspect-video bg-surface-container-high rounded-lg mb-2 flex items-center justify-center text-outline-variant relative overflow-hidden">
@@ -201,9 +202,9 @@ export function RoutineBuilder() {
                       </button>
                     </div>
                   </div>
-                  {bodyPartLabel && (
+                  {bodyPartLabelKey && (
                     <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-2 py-0.5 mb-1 inline-block">
-                      {bodyPartLabel}
+                      {t(bodyPartLabelKey)}
                     </span>
                   )}
                   <h3 className="font-bold text-sm text-on-surface leading-tight">{template.title}</h3>
@@ -214,39 +215,36 @@ export function RoutineBuilder() {
           </div>
         </div>
 
-        {}
         <div className="flex-1 flex flex-col bg-surface-container-lowest rounded-2xl shadow-ambient border-ghost overflow-hidden">
           <div className="p-6 border-b border-surface-container-high bg-surface">
-            <div className="flex gap-4 mb-4">
-              <div className="flex-1">
-                <Input
-                  label="Título de la rutina"
-                  value={routineTitle}
-                  onChange={e => setRoutineTitle(e.target.value)}
-                  placeholder="Ej. Movilidad Post-Op Rodilla"
-                />
-              </div>
-              <div className="w-48">
-                <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">Tipo</label>
+            <div className="space-y-3 mb-4">
+              <Input
+                label={t('therapist.builder.routineTitleLabel')}
+                value={routineTitle}
+                onChange={e => setRoutineTitle(e.target.value)}
+                placeholder={t('therapist.builder.routineTitlePlaceholder')}
+              />
+              <div>
+                <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">{t('therapist.builder.typeLabel')}</label>
                 <select
                   value={routineType}
                   onChange={(e) => setRoutineType(e.target.value as 'TREATMENT' | 'RELAXATION')}
                   className="w-full bg-surface-container text-on-surface rounded-t-lg px-4 py-3 border-b-2 border-transparent outline-none focus:bg-surface-container-lowest focus:border-primary"
                 >
-                  <option value="TREATMENT">Treatment</option>
-                  <option value="RELAXATION">Relaxation</option>
+                  <option value="TREATMENT">{t('therapist.builder.typeTreatment')}</option>
+                  <option value="RELAXATION">{t('therapist.builder.typeRelaxation')}</option>
                 </select>
               </div>
             </div>
-            <p className="text-sm font-bold text-primary">{selectedActivities.length} actividades</p>
+            <p className="text-sm font-bold text-primary">{t('therapist.builder.activitiesCount', { count: selectedActivities.length })}</p>
           </div>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-surface-bright">
             {selectedActivities.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-outline">
                 <Plus size={48} className="mb-4 opacity-50" />
-                <p className="font-display">Tu rutina está vacía.</p>
-                <p className="text-sm">Haz clic en + sobre cualquier ejercicio.</p>
+                <p className="font-display">{t('therapist.builder.emptyRoutine')}</p>
+                <p className="text-sm">{t('therapist.builder.emptyRoutineHint')}</p>
               </div>
             ) : (
               selectedActivities.map((activity, index) => (
@@ -263,7 +261,7 @@ export function RoutineBuilder() {
                     </div>
                     <div className="grid grid-cols-3 gap-6">
                       <div>
-                        <label className="text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-1 block">Duración (min)</label>
+                        <label className="text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-1 block">{t('therapist.builder.duration')}</label>
                         <div className="flex items-center gap-2">
                           <button onClick={() => handleUpdateActivity(activity.id, 'durationMinutes', Math.max(1, activity.durationMinutes - 1))} className="p-1 bg-surface-container rounded hover:text-primary"><ChevronDown size={16} /></button>
                           <span className="w-8 text-center font-bold text-lg">{activity.durationMinutes}</span>
@@ -271,7 +269,7 @@ export function RoutineBuilder() {
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-1 block">Reps</label>
+                        <label className="text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-1 block">{t('therapist.builder.reps')}</label>
                         <div className="flex items-center gap-2">
                           <button onClick={() => handleUpdateActivity(activity.id, 'repetitions', Math.max(1, activity.repetitions - 1))} className="p-1 bg-surface-container rounded hover:text-primary"><ChevronDown size={16} /></button>
                           <span className="w-8 text-center font-bold text-lg">{activity.repetitions}</span>
@@ -279,7 +277,7 @@ export function RoutineBuilder() {
                         </div>
                       </div>
                       <div>
-                        <label className="text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-1 block">Descanso (seg)</label>
+                        <label className="text-xs text-on-surface-variant uppercase font-bold tracking-wider mb-1 block">{t('therapist.builder.rest')}</label>
                         <div className="flex items-center gap-2">
                           <button onClick={() => handleUpdateActivity(activity.id, 'restSeconds', Math.max(0, (activity.restSeconds || 0) - 5))} className="p-1 bg-surface-container rounded hover:text-primary"><ChevronDown size={16} /></button>
                           <span className="w-8 text-center font-bold text-lg">{activity.restSeconds}</span>

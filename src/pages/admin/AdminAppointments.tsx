@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Calendar, Clock, User, Mail, XCircle, Pencil, ChevronLeft, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { appointmentsApi } from '../../services/appointments.api';
 import { adminApi } from '../../services/admin.api';
@@ -8,12 +9,6 @@ import type { Appointment, Therapist } from '../../types';
 import { cn } from '../../utils/cn';
 import { toLocalDateString } from '../../utils/date';
 
-const statusLabel: Record<string, string> = {
-  SCHEDULED: 'Programada',
-  CONFIRMED: 'Confirmada',
-  CANCELLED: 'Cancelada',
-  COMPLETED: 'Completada',
-};
 const statusColor: Record<string, string> = {
   SCHEDULED: 'bg-primary-container text-primary',
   CONFIRMED: 'bg-secondary-container text-secondary',
@@ -30,6 +25,7 @@ function toDatetimeLocal(iso: string) {
 }
 
 export function AdminAppointments() {
+  const { t } = useTranslation();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [patients, setPatients] = useState<PatientOpt[]>([]);
@@ -40,6 +36,7 @@ export function AdminAppointments() {
   const [showForm, setShowForm] = useState(false);
   const [editAppt, setEditAppt] = useState<Appointment | null>(null);
   const [form, setForm] = useState({ patientId: '', therapistId: '', dateTime: '', roomId: '', treatmentPlanId: '', notes: '' });
+  const [recur, setRecur] = useState({ enabled: false, frequency: 'WEEKLY' as 'WEEKLY' | 'BIWEEKLY', count: 4 });
   const [reminderMsg, setReminderMsg] = useState<Record<string, { text: string; preview?: string | null }>>({});
   const [rooms, setRooms] = useState<Room[]>([]);
   const [patientPlans, setPatientPlans] = useState<TreatmentPlan[]>([]);
@@ -80,6 +77,7 @@ export function AdminAppointments() {
   function openCreate() {
     setEditAppt(null);
     setForm({ patientId: '', therapistId: '', dateTime: '', roomId: '', treatmentPlanId: '', notes: '' });
+    setRecur({ enabled: false, frequency: 'WEEKLY', count: 4 });
     setError('');
     setShowForm(true);
   }
@@ -118,8 +116,10 @@ export function AdminAppointments() {
           roomId: form.roomId || undefined,
           treatmentPlanId: form.treatmentPlanId || undefined,
           notes: form.notes || undefined,
+          recurrence: recur.enabled ? { frequency: recur.frequency, count: recur.count } : undefined,
         });
         setAppointments(prev => [created, ...prev]);
+        if (recur.enabled) loadAppointments();
       }
       setShowForm(false);
     } catch (e: unknown) {
@@ -140,7 +140,7 @@ export function AdminAppointments() {
   async function handleReminder(appt: Appointment) {
     try {
       const res = await appointmentsApi.sendReminder(appt.id);
-      const msg = res.preview ? 'Correo de prueba generado:' : 'Correo enviado';
+      const msg = res.preview ? t('admin.appointments.reminderTestGenerated') : t('admin.appointments.reminderSent');
       setReminderMsg(prev => ({ ...prev, [appt.id]: { text: msg, preview: res.preview } }));
     } catch (e: unknown) {
       setReminderMsg(prev => ({ ...prev, [appt.id]: { text: (e as Error).message } }));
@@ -151,16 +151,15 @@ export function AdminAppointments() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold">Citas</h1>
-          <p className="text-on-surface-variant">Gestión de agenda y citas</p>
+          <h1 className="text-3xl font-display font-bold">{t('admin.appointments.title')}</h1>
+          <p className="text-on-surface-variant">{t('admin.appointments.subtitle')}</p>
         </div>
         <button onClick={openCreate}
           className="flex items-center gap-2 bg-primary text-on-primary px-4 py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity">
-          <Plus size={18} /> Agendar cita
+          <Plus size={18} /> {t('admin.appointments.schedule')}
         </button>
       </div>
 
-      {}
       <div className="bg-surface-container rounded-2xl p-4 mb-6 flex flex-wrap gap-3 items-center">
         <div className="flex items-center gap-1">
           <button onClick={() => changeDay(-1)} className="p-1.5 rounded-lg hover:bg-surface transition-colors">
@@ -174,104 +173,127 @@ export function AdminAppointments() {
           </button>
           {filterDate && (
             <button onClick={() => setFilterDate('')} className="text-xs text-on-surface-variant hover:text-error transition-colors ml-1">
-              Limpiar
+              {t('admin.appointments.clear')}
             </button>
           )}
         </div>
 
         <select value={filterTherapist} onChange={e => setFilterTherapist(e.target.value)}
           className="bg-surface border border-surface-container-high rounded-lg px-3 py-1.5 text-sm">
-          <option value="">Todos los terapeutas</option>
+          <option value="">{t('admin.appointments.allTherapists')}</option>
           {therapists.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
 
         <select value={filterPatient} onChange={e => setFilterPatient(e.target.value)}
           className="bg-surface border border-surface-container-high rounded-lg px-3 py-1.5 text-sm">
-          <option value="">Todos los pacientes</option>
+          <option value="">{t('admin.appointments.allPatients')}</option>
           {patients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
 
         <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
           className="bg-surface border border-surface-container-high rounded-lg px-3 py-1.5 text-sm">
-          <option value="">Todos los estados</option>
-          <option value="SCHEDULED">Programadas</option>
-          <option value="CONFIRMED">Confirmadas</option>
-          <option value="COMPLETED">Completadas</option>
-          <option value="CANCELLED">Canceladas</option>
+          <option value="">{t('admin.appointments.allStatuses')}</option>
+          <option value="SCHEDULED">{t('admin.appointments.statusScheduled')}</option>
+          <option value="CONFIRMED">{t('admin.appointments.statusConfirmed')}</option>
+          <option value="COMPLETED">{t('admin.appointments.statusCompleted')}</option>
+          <option value="CANCELLED">{t('admin.appointments.statusCancelled')}</option>
         </select>
       </div>
 
-      {}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h2 className="text-xl font-display font-bold mb-4">
-              {editAppt ? 'Reprogramar cita' : 'Nueva cita'}
+              {editAppt ? t('admin.appointments.rescheduleTitle') : t('admin.appointments.newTitle')}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               {!editAppt && (
                 <>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Paciente</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.appointments.patient')}</label>
                     <select required value={form.patientId}
                       onChange={e => setForm(f => ({ ...f, patientId: e.target.value }))}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm">
-                      <option value="">Seleccionar paciente...</option>
+                      <option value="">{t('admin.appointments.selectPatient')}</option>
                       {patients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Terapeuta</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.appointments.therapist')}</label>
                     <select required value={form.therapistId}
                       onChange={e => setForm(f => ({ ...f, therapistId: e.target.value }))}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm">
-                      <option value="">Seleccionar terapeuta...</option>
+                      <option value="">{t('admin.appointments.selectTherapist')}</option>
                       {therapists.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                   </div>
                 </>
               )}
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Fecha y hora</label>
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.appointments.dateTime')}</label>
                 <input required type="datetime-local" value={form.dateTime}
                   onChange={e => setForm(f => ({ ...f, dateTime: e.target.value }))}
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
               </div>
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Sala (opcional)</label>
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.appointments.roomOptional')}</label>
                 <select value={form.roomId}
                   onChange={e => setForm(f => ({ ...f, roomId: e.target.value }))}
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm">
-                  <option value="">Sin sala asignada</option>
+                  <option value="">{t('admin.appointments.noRoom')}</option>
                   {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
               {patientPlans.length > 0 && (
                 <div>
-                  <label className="text-sm text-on-surface-variant mb-1 block">Plan de tratamiento (opcional)</label>
+                  <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.appointments.treatmentPlanOptional')}</label>
                   <select value={form.treatmentPlanId}
                     onChange={e => setForm(f => ({ ...f, treatmentPlanId: e.target.value }))}
                     className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm">
-                    <option value="">Sin vincular</option>
+                    <option value="">{t('admin.appointments.noPlan')}</option>
                     {patientPlans.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </div>
               )}
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Notas (opcional)</label>
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.appointments.notesOptional')}</label>
                 <textarea rows={3} value={form.notes}
                   onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm resize-none" />
               </div>
+              {!editAppt && (
+                <div className="rounded-xl border border-surface-container-high p-3 space-y-2">
+                  <label className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" checked={recur.enabled}
+                      onChange={e => setRecur(r => ({ ...r, enabled: e.target.checked }))} />
+                    {t('admin.appointments.recurring')}
+                  </label>
+                  {recur.enabled && (
+                    <div className="flex gap-2 items-center text-sm">
+                      <select value={recur.frequency}
+                        onChange={e => setRecur(r => ({ ...r, frequency: e.target.value as 'WEEKLY' | 'BIWEEKLY' }))}
+                        className="bg-surface-container border border-surface-container-high rounded-lg px-2 py-1.5">
+                        <option value="WEEKLY">{t('admin.appointments.weekly')}</option>
+                        <option value="BIWEEKLY">{t('admin.appointments.biweekly')}</option>
+                      </select>
+                      <span className="text-on-surface-variant">{t('admin.appointments.for')}</span>
+                      <input type="number" min={2} max={26} value={recur.count}
+                        onChange={e => setRecur(r => ({ ...r, count: Number(e.target.value) }))}
+                        className="w-16 bg-surface-container border border-surface-container-high rounded-lg px-2 py-1.5" />
+                      <span className="text-on-surface-variant">{t('admin.appointments.sessions')}</span>
+                    </div>
+                  )}
+                </div>
+              )}
               {error && <p className="text-sm text-error">{error}</p>}
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowForm(false)}
                   className="flex-1 py-2.5 rounded-xl border border-surface-container-high text-sm hover:bg-surface-container transition-colors">
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button type="submit"
                   className="flex-1 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition-opacity">
-                  {editAppt ? 'Reprogramar' : 'Agendar'}
+                  {editAppt ? t('admin.appointments.rescheduleAction') : t('admin.appointments.scheduleAction')}
                 </button>
               </div>
             </form>
@@ -279,11 +301,10 @@ export function AdminAppointments() {
         </div>
       )}
 
-      {}
-      {loading && <p className="text-on-surface-variant">Cargando...</p>}
+      {loading && <p className="text-on-surface-variant">{t('common.loading')}</p>}
       {!loading && appointments.length === 0 && (
         <div className="bg-surface-container rounded-2xl p-12 text-center text-on-surface-variant">
-          No se encontraron citas con los filtros seleccionados.
+          {t('admin.appointments.emptyFiltered')}
         </div>
       )}
 
@@ -305,7 +326,7 @@ export function AdminAppointments() {
                       {new Date(appt.dateTime).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                     </p>
                     <span className={cn('text-xs px-2 py-0.5 rounded-full font-medium', statusColor[appt.status])}>
-                      {statusLabel[appt.status]}
+                      {t(`admin.status.${appt.status}`)}
                     </span>
                   </div>
                   <div className="flex gap-4 mt-1 text-sm text-on-surface-variant flex-wrap">
@@ -323,20 +344,20 @@ export function AdminAppointments() {
                   {appt.status === 'SCHEDULED' && (
                     <button onClick={() => handleConfirm(appt.id)}
                       className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-surface hover:bg-secondary-container hover:text-secondary transition-colors">
-                      <CheckCircle2 size={13} /> Confirmar
+                      <CheckCircle2 size={13} /> {t('admin.appointments.confirm')}
                     </button>
                   )}
                   <button onClick={() => openEdit(appt)}
                     className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-surface hover:bg-surface-container-high transition-colors">
-                    <Pencil size={13} /> Reprogramar
+                    <Pencil size={13} /> {t('admin.appointments.reschedule')}
                   </button>
                   <button onClick={() => handleCancel(appt.id)}
                     className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-surface hover:bg-error-container hover:text-error transition-colors">
-                    <XCircle size={13} /> Cancelar
+                    <XCircle size={13} /> {t('admin.appointments.cancelAction')}
                   </button>
                   <button onClick={() => handleReminder(appt)}
                     className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-surface hover:bg-primary-container hover:text-primary transition-colors">
-                    <Mail size={13} /> Recordatorio
+                    <Mail size={13} /> {t('admin.appointments.reminder')}
                   </button>
                 </div>
               )}

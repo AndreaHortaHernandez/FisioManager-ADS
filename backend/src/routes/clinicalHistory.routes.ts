@@ -3,10 +3,12 @@ import {
   getHistory, upsertHistory, addDiagnosis, updateDiagnosis, addNote, getPatientProgress,
   updateNoteVisibility, getOwnHistory,
 } from '../controllers/clinicalHistory.controller';
+import { uploadDocument, listDocuments, deleteDocument } from '../controllers/clinicalDocument.controller';
 import { getProgressReportPdf } from '../controllers/report.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { requireRole } from '../middlewares/role.middleware';
 import { validate } from '../middlewares/validate.middleware';
+import { documentUpload } from '../middlewares/upload.middleware';
 import {
   upsertHistorySchema, createDiagnosisSchema, updateDiagnosisSchema, createNoteSchema,
   updateNoteVisibilitySchema,
@@ -18,6 +20,12 @@ pacientesRouter.get('/:id/historial', getHistory);
 pacientesRouter.post('/:id/historial', validate(upsertHistorySchema), upsertHistory);
 pacientesRouter.get('/:id/progreso', getPatientProgress);
 pacientesRouter.get('/:id/reporte', getProgressReportPdf);
+pacientesRouter.get('/:id/documentos', listDocuments);
+pacientesRouter.post('/:id/documentos', documentUpload.single('file'), uploadDocument);
+
+const documentosRouter = Router();
+documentosRouter.use(authMiddleware, requireRole('THERAPIST', 'ADMIN'));
+documentosRouter.delete('/:id', deleteDocument);
 
 const historialRouter = Router();
 historialRouter.use(authMiddleware, requireRole('THERAPIST', 'ADMIN'));
@@ -36,4 +44,4 @@ const ownHistoryRouter = Router();
 ownHistoryRouter.use(authMiddleware, requireRole('PATIENT'));
 ownHistoryRouter.get('/', getOwnHistory);
 
-export { pacientesRouter, historialRouter, diagnosticosRouter, notasRouter, ownHistoryRouter };
+export { pacientesRouter, historialRouter, diagnosticosRouter, notasRouter, ownHistoryRouter, documentosRouter };

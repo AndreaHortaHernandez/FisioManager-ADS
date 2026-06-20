@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Camera, Loader2 } from 'lucide-react';
 import { resolveUploadUrl } from '../utils/url';
 
@@ -9,6 +10,7 @@ interface AvatarUploadFieldProps {
 }
 
 export function AvatarUploadField({ avatarUrl, name, onUpload }: AvatarUploadFieldProps) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
@@ -34,7 +36,7 @@ export function AvatarUploadField({ avatarUrl, name, onUpload }: AvatarUploadFie
     <div className="flex items-center gap-4">
       <div className="relative w-16 h-16 shrink-0">
         {resolvedUrl ? (
-          <img src={resolvedUrl} alt={name ?? 'avatar'} className="w-16 h-16 rounded-full object-cover" />
+          <img src={resolvedUrl} alt={name ?? t('shared.avatar.alt')} className="w-16 h-16 rounded-full object-cover" />
         ) : (
           <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center text-primary font-display font-bold text-xl">
             {name?.[0]?.toUpperCase() ?? '?'}
@@ -49,7 +51,7 @@ export function AvatarUploadField({ avatarUrl, name, onUpload }: AvatarUploadFie
       <div>
         <button type="button" onClick={() => inputRef.current?.click()} disabled={uploading}
           className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors disabled:opacity-50">
-          <Camera size={15} /> {resolvedUrl ? 'Cambiar foto' : 'Subir foto'}
+          <Camera size={15} /> {resolvedUrl ? t('shared.avatar.change') : t('shared.avatar.upload')}
         </button>
         <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleChange} />
         {error && <p className="text-xs text-error mt-1">{error}</p>}

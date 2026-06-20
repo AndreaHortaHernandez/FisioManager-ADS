@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Users, ChevronRight } from 'lucide-react';
@@ -6,10 +7,10 @@ import { resolveUploadUrl } from '../../utils/url';
 
 type RecoveryStatus = 'ON_TRACK' | 'DELAYED' | 'ATTENTION';
 
-const STATUS_CONFIG: Record<RecoveryStatus, { label: string; color: string; bar: string }> = {
-  ON_TRACK:  { label: 'On Track',  color: 'text-secondary bg-secondary/10',  bar: 'bg-secondary'  },
-  DELAYED:   { label: 'Delayed',   color: 'text-tertiary bg-tertiary/10',     bar: 'bg-tertiary'   },
-  ATTENTION: { label: 'Attention', color: 'text-error bg-error/10',           bar: 'bg-error'      },
+const STATUS_CONFIG: Record<RecoveryStatus, { labelKey: string; color: string; bar: string }> = {
+  ON_TRACK:  { labelKey: 'therapist.patients.status.onTrack',   color: 'text-secondary bg-secondary/10',  bar: 'bg-secondary'  },
+  DELAYED:   { labelKey: 'therapist.patients.status.delayed',   color: 'text-tertiary bg-tertiary/10',     bar: 'bg-tertiary'   },
+  ATTENTION: { labelKey: 'therapist.patients.status.attention', color: 'text-error bg-error/10',           bar: 'bg-error'      },
 };
 
 function getStatus(avgPain: number | null, completionRate: number, totalRoutines: number): RecoveryStatus {
@@ -20,6 +21,7 @@ function getStatus(avgPain: number | null, completionRate: number, totalRoutines
 }
 
 export function PatientsList() {
+  const { t } = useTranslation();
   const navigate  = useNavigate();
   const patients  = useStore(state => state.patients);
   const allRoutines  = useStore(state => state.routines);
@@ -28,14 +30,14 @@ export function PatientsList() {
   return (
     <div className="space-y-8 animate-fade-in">
       <header>
-        <h1 className="text-3xl font-display font-bold text-on-surface mb-1">Pacientes</h1>
-        <p className="text-on-surface-variant font-body">{patients.length} paciente{patients.length !== 1 ? 's' : ''} bajo tu cuidado.</p>
+        <h1 className="text-3xl font-display font-bold text-on-surface mb-1">{t('therapist.patients.title')}</h1>
+        <p className="text-on-surface-variant font-body">{t('therapist.patients.subtitle', { count: patients.length })}</p>
       </header>
 
       {patients.length === 0 ? (
         <Card className="flex flex-col items-center py-20 border-ghost text-center">
           <Users size={48} className="text-outline-variant mb-4" />
-          <p className="font-display font-bold text-on-surface">Sin pacientes registrados</p>
+          <p className="font-display font-bold text-on-surface">{t('therapist.patients.empty')}</p>
         </Card>
       ) : (
         <div className="space-y-3">
@@ -69,12 +71,11 @@ export function PatientsList() {
                     <div className="flex items-center gap-2 mb-0.5">
                       <h3 className="font-bold text-on-surface">{patient.name}</h3>
                       <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${cfg.color}`}>
-                        {cfg.label}
+                        {t(cfg.labelKey)}
                       </span>
                     </div>
                     <p className="text-sm text-on-surface-variant truncate mb-2">{patient.condition}</p>
 
-                    {}
                     <div className="flex items-center gap-3">
                       <div className="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
                         <div
@@ -83,11 +84,11 @@ export function PatientsList() {
                         />
                       </div>
                       <span className="text-xs font-bold text-on-surface-variant whitespace-nowrap">
-                        {completed}/{total} rutinas
+                        {t('therapist.patients.routinesCount', { completed, total })}
                       </span>
                       {avgPain !== null && (
                         <span className={`text-xs font-bold whitespace-nowrap ${avgPain >= 7 ? 'text-error' : avgPain >= 5 ? 'text-tertiary' : 'text-secondary'}`}>
-                          Dolor {avgPain}
+                          {t('therapist.patients.pain', { value: avgPain })}
                         </span>
                       )}
                     </div>

@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -7,15 +8,15 @@ import { Modal } from '../../components/ui/Modal';
 import { Plus, Video, Image, Wind, Dumbbell, Upload, X, Trash2 } from 'lucide-react';
 import type { BodyPart } from '../../types';
 
-const BODY_PARTS: { value: BodyPart; label: string }[] = [
-  { value: 'KNEE', label: 'Rodilla' },
-  { value: 'BACK', label: 'Espalda' },
-  { value: 'SHOULDER', label: 'Hombro' },
-  { value: 'NECK', label: 'Cuello' },
-  { value: 'ARM', label: 'Brazo' },
-  { value: 'HIP', label: 'Cadera' },
-  { value: 'ANKLE', label: 'Tobillo' },
-  { value: 'OTHER', label: 'Otro' },
+const BODY_PARTS: { value: BodyPart; labelKey: string }[] = [
+  { value: 'KNEE', labelKey: 'therapist.bodyPart.knee' },
+  { value: 'BACK', labelKey: 'therapist.bodyPart.back' },
+  { value: 'SHOULDER', labelKey: 'therapist.bodyPart.shoulder' },
+  { value: 'NECK', labelKey: 'therapist.bodyPart.neck' },
+  { value: 'ARM', labelKey: 'therapist.bodyPart.arm' },
+  { value: 'HIP', labelKey: 'therapist.bodyPart.hip' },
+  { value: 'ANKLE', labelKey: 'therapist.bodyPart.ankle' },
+  { value: 'OTHER', labelKey: 'therapist.bodyPart.other' },
 ];
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
@@ -24,6 +25,7 @@ function ExerciseCard({ template, onDelete }: {
   template: { id: string; title: string; description: string; imageUrl?: string; videoUrl?: string; bodyPart?: string };
   onDelete: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const media = template.imageUrl ?? template.videoUrl;
   const isVideo = !!template.videoUrl && !template.imageUrl;
 
@@ -39,7 +41,7 @@ function ExerciseCard({ template, onDelete }: {
         ) : (
           <div className="flex flex-col items-center gap-2 text-outline-variant">
             <Video size={32} />
-            <span className="text-xs">Sin media</span>
+            <span className="text-xs">{t('therapist.exercises.noMedia')}</span>
           </div>
         )}
       </div>
@@ -49,19 +51,20 @@ function ExerciseCard({ template, onDelete }: {
         onClick={() => onDelete(template.id)}
         className="mt-auto flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg text-xs font-bold text-error hover:bg-error/10 transition-colors"
       >
-        <Trash2 size={13} /> Eliminar
+        <Trash2 size={13} /> {t('common.delete')}
       </button>
     </Card>
   );
 }
 
 export function ExerciseLibrary() {
+  const { t } = useTranslation();
   const templates = useStore(state => state.activityTemplates);
   const addActivityTemplate = useStore(state => state.addActivityTemplate);
   const deleteActivityTemplate = useStore(state => state.deleteActivityTemplate);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Eliminar este ejercicio del catálogo?')) return;
+    if (!window.confirm(t('therapist.exercises.confirmDelete'))) return;
     await deleteActivityTemplate(id);
   };
 
@@ -107,7 +110,7 @@ export function ExerciseLibrary() {
       setVideoFile(null);
       setImageFile(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al guardar el ejercicio');
+      setError(e instanceof Error ? e.message : t('therapist.exercises.saveError'));
     } finally {
       setSaving(false);
     }
@@ -124,30 +127,28 @@ export function ExerciseLibrary() {
     <div className="space-y-10 animate-fade-in">
       <header className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-display font-bold text-on-surface mb-2">Biblioteca de Ejercicios</h1>
-          <p className="text-on-surface-variant font-body">Administra el catálogo de ejercicios disponibles para tus rutinas.</p>
+          <h1 className="text-3xl font-display font-bold text-on-surface mb-2">{t('therapist.exercises.title')}</h1>
+          <p className="text-on-surface-variant font-body">{t('therapist.exercises.subtitle')}</p>
         </div>
         <Button onClick={() => setModalOpen(true)} className="flex items-center gap-2">
-          <Plus size={20} /> Nuevo Ejercicio
+          <Plus size={20} /> {t('therapist.exercises.newExercise')}
         </Button>
       </header>
 
-      {}
       <section>
         <div className="flex items-center gap-3 mb-5">
           <Dumbbell size={22} className="text-primary" />
-          <h2 className="text-xl font-display font-bold text-on-surface">Ejercicios Físicos</h2>
+          <h2 className="text-xl font-display font-bold text-on-surface">{t('therapist.exercises.physicalTitle')}</h2>
           <span className="text-sm text-on-surface-variant">({physical.length})</span>
         </div>
 
-        {}
         {physical.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-6">
             <button
               onClick={() => setActiveBodyPart('ALL')}
               className={`px-4 py-1.5 rounded-full text-sm font-body transition-colors ${activeBodyPart === 'ALL' ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}
             >
-              Todos
+              {t('therapist.exercises.all')}
             </button>
             {BODY_PARTS.filter(bp => bodyPartsUsed.includes(bp.value)).map(bp => (
               <button
@@ -155,7 +156,7 @@ export function ExerciseLibrary() {
                 onClick={() => setActiveBodyPart(bp.value)}
                 className={`px-4 py-1.5 rounded-full text-sm font-body transition-colors ${activeBodyPart === bp.value ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}
               >
-                {bp.label}
+                {t(bp.labelKey)}
               </button>
             ))}
           </div>
@@ -164,8 +165,8 @@ export function ExerciseLibrary() {
         {filteredPhysical.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-16 bg-surface-container-lowest rounded-2xl border-ghost text-center">
             <Dumbbell size={48} className="text-outline-variant mb-3" />
-            <p className="font-display font-bold text-on-surface">Sin ejercicios físicos</p>
-            <p className="text-sm text-on-surface-variant mt-1">Crea el primero con el botón de arriba.</p>
+            <p className="font-display font-bold text-on-surface">{t('therapist.exercises.emptyPhysical')}</p>
+            <p className="text-sm text-on-surface-variant mt-1">{t('therapist.exercises.emptyHint')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -174,19 +175,18 @@ export function ExerciseLibrary() {
         )}
       </section>
 
-      {}
       <section>
         <div className="flex items-center gap-3 mb-5">
           <Wind size={22} className="text-tertiary" />
-          <h2 className="text-xl font-display font-bold text-on-surface">Meditación y Respiración</h2>
+          <h2 className="text-xl font-display font-bold text-on-surface">{t('therapist.exercises.breathingTitle')}</h2>
           <span className="text-sm text-on-surface-variant">({breathing.length})</span>
         </div>
 
         {breathing.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-16 bg-surface-container-lowest rounded-2xl border-ghost text-center">
             <Wind size={48} className="text-outline-variant mb-3" />
-            <p className="font-display font-bold text-on-surface">Sin ejercicios de meditación</p>
-            <p className="text-sm text-on-surface-variant mt-1">Crea el primero con el botón de arriba.</p>
+            <p className="font-display font-bold text-on-surface">{t('therapist.exercises.emptyBreathing')}</p>
+            <p className="text-sm text-on-surface-variant mt-1">{t('therapist.exercises.emptyHint')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
@@ -195,31 +195,30 @@ export function ExerciseLibrary() {
         )}
       </section>
 
-      {}
-      <Modal isOpen={modalOpen} onClose={handleCloseModal} title="Nuevo Ejercicio">
+      <Modal isOpen={modalOpen} onClose={handleCloseModal} title={t('therapist.exercises.newExercise')}>
         <div className="space-y-4">
-          <Input label="Título" value={title} onChange={e => setTitle(e.target.value)} placeholder="ej. Extensión de rodilla" />
+          <Input label={t('therapist.exercises.form.titleLabel')} value={title} onChange={e => setTitle(e.target.value)} placeholder={t('therapist.exercises.form.titlePlaceholder')} />
           <div>
-            <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">Descripción</label>
+            <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">{t('therapist.exercises.form.descriptionLabel')}</label>
             <textarea
               value={description}
               onChange={e => setDescription(e.target.value)}
-              placeholder="Describe el ejercicio..."
+              placeholder={t('therapist.exercises.form.descriptionPlaceholder')}
               rows={3}
               className="w-full bg-surface-container text-on-surface rounded-t-lg px-4 py-3 border-b-2 border-transparent outline-none focus:bg-surface-container-lowest focus:border-primary resize-none font-body text-sm"
             />
           </div>
 
           <div>
-            <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">Tipo</label>
+            <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">{t('therapist.exercises.form.typeLabel')}</label>
             <div className="flex gap-3">
-              {(['PHYSICAL', 'BREATHING'] as const).map(t => (
+              {(['PHYSICAL', 'BREATHING'] as const).map(opt => (
                 <button
-                  key={t}
-                  onClick={() => setType(t)}
-                  className={`flex-1 py-2 rounded-xl text-sm font-bold transition-colors ${type === t ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}
+                  key={opt}
+                  onClick={() => setType(opt)}
+                  className={`flex-1 py-2 rounded-xl text-sm font-bold transition-colors ${type === opt ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}
                 >
-                  {t === 'PHYSICAL' ? 'Físico' : 'Meditación / Respiración'}
+                  {opt === 'PHYSICAL' ? t('therapist.exercises.form.typePhysical') : t('therapist.exercises.form.typeBreathing')}
                 </button>
               ))}
             </div>
@@ -227,7 +226,7 @@ export function ExerciseLibrary() {
 
           {type === 'PHYSICAL' && (
             <div>
-              <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">Parte del cuerpo</label>
+              <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">{t('therapist.exercises.form.bodyPartLabel')}</label>
               <div className="flex flex-wrap gap-2">
                 {BODY_PARTS.map(bp => (
                   <button
@@ -235,16 +234,15 @@ export function ExerciseLibrary() {
                     onClick={() => setBodyPart(bp.value)}
                     className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${bodyPart === bp.value ? 'bg-primary text-white' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}
                   >
-                    {bp.label}
+                    {t(bp.labelKey)}
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          {}
           <div>
-            <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">Imagen</label>
+            <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">{t('therapist.exercises.form.imageLabel')}</label>
             <input ref={imageRef} type="file" accept="image/*" className="hidden" onChange={e => setImageFile(e.target.files?.[0] ?? null)} />
             {imageFile ? (
               <div className="flex items-center gap-3 p-3 bg-surface-container rounded-xl">
@@ -255,14 +253,13 @@ export function ExerciseLibrary() {
             ) : (
               <button onClick={() => imageRef.current?.click()} className="w-full flex items-center gap-3 p-3 bg-surface-container rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
                 <Upload size={18} />
-                <span className="text-sm">Subir imagen</span>
+                <span className="text-sm">{t('therapist.exercises.form.uploadImage')}</span>
               </button>
             )}
           </div>
 
-          {}
           <div>
-            <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">Video (opcional)</label>
+            <label className="text-sm font-body text-on-surface-variant ml-2 tracking-wide mb-1 block">{t('therapist.exercises.form.videoLabel')}</label>
             <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={e => setVideoFile(e.target.files?.[0] ?? null)} />
             {videoFile ? (
               <div className="flex items-center gap-3 p-3 bg-surface-container rounded-xl">
@@ -273,7 +270,7 @@ export function ExerciseLibrary() {
             ) : (
               <button onClick={() => videoRef.current?.click()} className="w-full flex items-center gap-3 p-3 bg-surface-container rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors">
                 <Upload size={18} />
-                <span className="text-sm">Subir video</span>
+                <span className="text-sm">{t('therapist.exercises.form.uploadVideo')}</span>
               </button>
             )}
           </div>
@@ -283,9 +280,9 @@ export function ExerciseLibrary() {
           )}
 
           <div className="flex gap-3 justify-end pt-2">
-            <Button variant="tertiary" onClick={handleCloseModal}>Cancelar</Button>
+            <Button variant="tertiary" onClick={handleCloseModal}>{t('common.cancel')}</Button>
             <Button onClick={handleSave} disabled={saving || !title.trim() || !description.trim()}>
-              {saving ? 'Guardando...' : 'Crear Ejercicio'}
+              {saving ? t('therapist.exercises.form.saving') : t('therapist.exercises.form.create')}
             </Button>
           </div>
         </div>

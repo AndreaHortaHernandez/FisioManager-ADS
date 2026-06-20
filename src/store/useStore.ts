@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Patient, Routine, Feedback, Role, ActivityTemplate, RoutineAssignment, AssignmentFrequency, AssignmentStatus } from '../types';
 import { setAuthToken, setRefreshToken, registerAuthHandlers } from '../services/api';
+import { disconnectSocket } from '../services/socket';
 import { authApi, type AuthUser } from '../services/auth.api';
 import { patientsApi } from '../services/patients.api';
 import { routinesApi } from '../services/routines.api';
@@ -44,6 +45,7 @@ interface AppState {
     audioRecordUrl?: string;
     transcript?:    string;
     aiSummary?:     string;
+    painPoints?:    import('../services/metrics.api').PainPointInput[];
   }) => Promise<void>;
   addRoutine: (routine: {
     title: string;
@@ -109,6 +111,7 @@ export const useStore = create<AppState>()(
       logout: () => {
 
         authApi.logout(get().refreshToken).catch(() => {  });
+        disconnectSocket();
         setAuthToken(null);
         setRefreshToken(null);
         set({
@@ -168,8 +171,16 @@ export const useStore = create<AppState>()(
       },
 
       addFeedback: async (data) => {
-        const created = await feedbackApi.create(data);
-        set(state => ({ feedbacks: [created, ...state.feedbacks] }));
+        try {
+          const created = await feedbackApi.create(data);
+          set(state => ({ feedbacks: [created, ...state.feedbacks] }));
+        } catch (err) {
+          if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            queueOfflineFeedback(data);
+            return;
+          }
+          throw err;
+        }
       },
 
       addRoutine: async (data) => {
@@ -255,3 +266,35 @@ registerAuthHandlers({
     useStore.getState().logout();
   },
 });
+
+const OFFLINE_FEEDBACK_KEY = 'fisiomanager-offline-feedback';
+
+type PendingFeedback = Parameters<ReturnType<typeof useStore.getState>['addFeedback']>[0];
+
+function queueOfflineFeedback(data: PendingFeedback) {
+  if (typeof localStorage === 'undefined') return;
+  const queue: PendingFeedback[] = JSON.parse(localStorage.getItem(OFFLINE_FEEDBACK_KEY) ?? '[]');
+  queue.push(data);
+  localStorage.setItem(OFFLINE_FEEDBACK_KEY, JSON.stringify(queue));
+}
+
+export async function flushOfflineFeedback() {
+  if (typeof localStorage === 'undefined') return;
+  const queue: PendingFeedback[] = JSON.parse(localStorage.getItem(OFFLINE_FEEDBACK_KEY) ?? '[]');
+  if (queue.length === 0) return;
+  const remaining: PendingFeedback[] = [];
+  for (const item of queue) {
+    try {
+      const created = await feedbackApi.create(item);
+      useStore.setState(state => ({ feedbacks: [created, ...state.feedbacks] }));
+    } catch {
+      remaining.push(item);
+    }
+  }
+  localStorage.setItem(OFFLINE_FEEDBACK_KEY, JSON.stringify(remaining));
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('online', () => { flushOfflineFeedback().catch(() => {}); });
+  if (navigator.onLine) flushOfflineFeedback().catch(() => {});
+}

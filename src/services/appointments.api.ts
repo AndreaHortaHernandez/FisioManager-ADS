@@ -12,7 +12,11 @@ export const appointmentsApi = {
     return api.get<Appointment[]>(`/appointments${qs ? `?${qs}` : ''}`);
   },
 
-  create(data: { patientId: string; therapistId: string; dateTime: string; roomId?: string; treatmentPlanId?: string; notes?: string }) {
+  create(data: {
+    patientId: string; therapistId: string; dateTime: string;
+    roomId?: string; treatmentPlanId?: string; notes?: string;
+    recurrence?: { frequency: 'WEEKLY' | 'BIWEEKLY'; count: number };
+  }) {
     return api.post<Appointment>('/appointments', data);
   },
 
@@ -20,8 +24,8 @@ export const appointmentsApi = {
     return api.patch<Appointment>(`/appointments/${id}`, data);
   },
 
-  cancel(id: string) {
-    return api.patch<Appointment>(`/appointments/${id}/cancel`, {});
+  cancel(id: string, scope?: 'one' | 'series') {
+    return api.patch<Appointment>(`/appointments/${id}/cancel${scope === 'series' ? '?scope=series' : ''}`, {});
   },
 
   confirm(id: string) {

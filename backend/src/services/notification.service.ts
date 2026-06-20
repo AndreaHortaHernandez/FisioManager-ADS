@@ -1,8 +1,10 @@
 import { userRepository } from '../repositories/user.repository';
 import { appointmentRepository } from '../repositories/appointment.repository';
 import { routineAssignmentRepository } from '../repositories/routineAssignment.repository';
+import { notificationRepository } from '../repositories/notification.repository';
 import { notificationPreferenceService } from './notificationPreference.service';
 import { emailService } from './email.service';
+import { emitToUser } from '../lib/socket';
 import { logger } from '../lib/logger';
 
 const HIGH_PAIN_THRESHOLD = 7;
@@ -17,6 +19,31 @@ function startOfDay(d: Date) {
 
 export const notificationService = {
 
+  createInApp(userId: string, type: string, title: string, body: string, linkUrl?: string): void {
+    notificationRepository
+      .create({ userId, type, title, body, linkUrl: linkUrl ?? null })
+      .then(notification => emitToUser(userId, 'notification:new', notification))
+      .catch(err => logger.error('notification_create_failed', { userId, type, error: (err as Error).message }));
+  },
+
+  list(userId: string) {
+    return notificationRepository.findByUser(userId);
+  },
+
+  countUnread(userId: string) {
+    return notificationRepository.countUnread(userId);
+  },
+
+  async markRead(id: string, userId: string) {
+    await notificationRepository.markRead(id, userId);
+    return { message: 'Notificación marcada como leída' };
+  },
+
+  async markAllRead(userId: string) {
+    await notificationRepository.markAllRead(userId);
+    return { message: 'Todas las notificaciones marcadas como leídas' };
+  },
+
   async alertHighPain(patientId: string, painLevel: number, emotionalState: string) {
     if (painLevel < HIGH_PAIN_THRESHOLD) return;
 
@@ -25,7 +52,17 @@ export const notificationService = {
     if (!patient || !therapistId) return;
 
     const therapist = await userRepository.findById(therapistId);
-    if (!therapist?.email) return;
+    if (!therapist) return;
+
+    this.createInApp(
+      therapistId,
+      'HIGH_PAIN',
+      'Alerta de dolor alto',
+      `${patient.name} reportó dolor nivel ${painLevel}/10 (estado: ${emotionalState}).`,
+      `/therapist/patients/${patientId}`,
+    );
+
+    if (!therapist.email) return;
     if (!(await notificationPreferenceService.isAllowed(therapistId, 'general'))) return;
 
     await emailService.sendHighPainAlert({
@@ -39,10 +76,20 @@ export const notificationService = {
 
   async notifyRoutineAssigned(patientId: string, therapistId: string, routineTitle: string) {
     const patient = await userRepository.findById(patientId);
-    if (!patient?.email) return;
-    if (!(await notificationPreferenceService.isAllowed(patientId, 'general'))) return;
+    if (!patient) return;
 
     const therapist = await userRepository.findById(therapistId);
+
+    this.createInApp(
+      patientId,
+      'ROUTINE',
+      'Nueva rutina asignada',
+      `${therapist?.name ?? 'Tu terapeuta'} te asignó la rutina "${routineTitle}".`,
+      '/patient/routines',
+    );
+
+    if (!patient.email) return;
+    if (!(await notificationPreferenceService.isAllowed(patientId, 'general'))) return;
 
     await emailService.sendRoutineAssigned({
       patientName:   patient.name,
@@ -57,6 +104,13 @@ export const notificationService = {
     let sent = 0;
     for (const appt of appts) {
       try {
+        this.createInApp(
+          appt.patientId,
+          'APPOINTMENT',
+          'Recordatorio de cita',
+          `Tienes una cita con ${appt.therapist.name} el ${appt.dateTime.toLocaleString('es-MX')}.`,
+          '/patient',
+        );
         if (!(await notificationPreferenceService.isAllowed(appt.patientId, 'appointment'))) {
           await appointmentRepository.markReminded(appt.id);
           continue;
@@ -93,6 +147,13 @@ export const notificationService = {
       if (alreadyRemindedToday) continue;
 
       try {
+        this.createInApp(
+          a.patientId,
+          'ROUTINE',
+          'Rutina de hoy',
+          `Recuerda completar tu rutina "${a.routine.title}" hoy.`,
+          '/patient/routines',
+        );
         if (!(await notificationPreferenceService.isAllowed(a.patientId, 'routine'))) {
           await routineAssignmentRepository.markReminded(a.id, now);
           continue;

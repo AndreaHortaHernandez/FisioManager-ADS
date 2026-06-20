@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import { ClipboardList, Plus, Loader2, Layers, Link2, ChevronDown, ChevronUp } from 'lucide-react';
@@ -12,9 +13,7 @@ const inputCls =
   'w-full px-4 py-2.5 rounded-xl bg-surface-container border border-outline-variant/40 text-sm ' +
   'text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/40';
 
-const STATUS_LABEL: Record<PlanStatus, string> = {
-  ACTIVE: 'Activo', COMPLETED: 'Completado', SUSPENDED: 'Suspendido',
-};
+const PLAN_STATUSES: PlanStatus[] = ['ACTIVE', 'COMPLETED', 'SUSPENDED'];
 
 function formatDate(iso?: string | null) {
   if (!iso) return '—';
@@ -22,6 +21,7 @@ function formatDate(iso?: string | null) {
 }
 
 export function TreatmentPlanSection({ patientId }: { patientId: string }) {
+  const { t } = useTranslation();
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
   const [unassigned, setUnassigned] = useState<RoutineAssignment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -139,10 +139,10 @@ export function TreatmentPlanSection({ patientId }: { patientId: string }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <ClipboardList size={18} className="text-primary" />
-          <h3 className="font-display font-bold">Planes de tratamiento</h3>
+          <h3 className="font-display font-bold">{t('shared.treatmentPlan.title')}</h3>
         </div>
         <Button onClick={() => setShowPlanForm(v => !v)} className="flex items-center gap-1.5 py-2 px-3 text-sm">
-          <Plus size={15} /> Nuevo plan
+          <Plus size={15} /> {t('shared.treatmentPlan.newPlan')}
         </Button>
       </div>
 
@@ -150,24 +150,24 @@ export function TreatmentPlanSection({ patientId }: { patientId: string }) {
 
       {showPlanForm && (
         <Card className="space-y-3 border-ghost">
-          <input className={inputCls} placeholder="Nombre del plan" value={planForm.name}
+          <input className={inputCls} placeholder={t('shared.treatmentPlan.planNamePlaceholder')} value={planForm.name}
             onChange={e => setPlanForm(f => ({ ...f, name: e.target.value }))} />
-          <input className={inputCls} placeholder="Objetivo clínico" value={planForm.clinicalGoal}
+          <input className={inputCls} placeholder={t('shared.treatmentPlan.clinicalGoalPlaceholder')} value={planForm.clinicalGoal}
             onChange={e => setPlanForm(f => ({ ...f, clinicalGoal: e.target.value }))} />
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-on-surface-variant">Fecha de inicio</label>
+              <label className="text-xs text-on-surface-variant">{t('shared.treatmentPlan.startDate')}</label>
               <input type="date" className={inputCls} value={planForm.startDate}
                 onChange={e => setPlanForm(f => ({ ...f, startDate: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs text-on-surface-variant">Fecha de fin estimada (opcional)</label>
+              <label className="text-xs text-on-surface-variant">{t('shared.treatmentPlan.endDate')}</label>
               <input type="date" className={inputCls} value={planForm.endDate}
                 onChange={e => setPlanForm(f => ({ ...f, endDate: e.target.value }))} />
             </div>
           </div>
           <Button onClick={createPlan} disabled={savingPlan || !planForm.name.trim() || !planForm.startDate}>
-            {savingPlan ? 'Creando…' : 'Crear plan'}
+            {savingPlan ? t('shared.treatmentPlan.creating') : t('shared.treatmentPlan.createPlan')}
           </Button>
         </Card>
       )}
@@ -175,7 +175,7 @@ export function TreatmentPlanSection({ patientId }: { patientId: string }) {
       {plans.length === 0 && !showPlanForm && (
         <Card level={2} className="py-8 text-center border-ghost">
           <Layers size={28} className="text-outline-variant mx-auto mb-2" />
-          <p className="text-sm text-on-surface-variant">Sin planes de tratamiento registrados.</p>
+          <p className="text-sm text-on-surface-variant">{t('shared.treatmentPlan.empty')}</p>
         </Card>
       )}
 
@@ -189,14 +189,14 @@ export function TreatmentPlanSection({ patientId }: { patientId: string }) {
                 <div>
                   <p className="font-bold text-on-surface">{plan.name}</p>
                   <p className="text-xs text-on-surface-variant">
-                    {plan.clinicalGoal ?? 'Sin objetivo clínico'} · {formatDate(plan.startDate)} — {formatDate(plan.endDate)}
+                    {plan.clinicalGoal ?? t('shared.treatmentPlan.noClinicalGoal')} · {formatDate(plan.startDate)} — {formatDate(plan.endDate)}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <select value={plan.status} onClick={e => e.stopPropagation()}
                     onChange={e => changeStatus(plan, e.target.value as PlanStatus)}
                     className="text-xs font-bold bg-surface-container-high rounded-full px-2 py-1">
-                    {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    {PLAN_STATUSES.map(s => <option key={s} value={s}>{t(`shared.treatmentPlan.status.${s}`)}</option>)}
                   </select>
                   {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                 </div>
@@ -208,7 +208,7 @@ export function TreatmentPlanSection({ patientId }: { patientId: string }) {
                     <Card key={phase.id} level={2} className="border-ghost space-y-2">
                       <div className="flex items-center justify-between">
                         <p className="font-bold text-sm">{phase.order}. {phase.name}</p>
-                        <span className="text-xs text-on-surface-variant">{phase.durationWeeks} sem.</span>
+                        <span className="text-xs text-on-surface-variant">{t('shared.treatmentPlan.weeksShort', { count: phase.durationWeeks })}</span>
                       </div>
                       {phase.objectives && <p className="text-xs text-on-surface-variant">{phase.objectives}</p>}
 
@@ -216,7 +216,7 @@ export function TreatmentPlanSection({ patientId }: { patientId: string }) {
                         <div className="space-y-1">
                           {phase.assignments.map(a => (
                             <p key={a.id} className="text-xs flex items-center gap-1.5 text-on-surface">
-                              <Link2 size={11} className="text-primary" /> {a.routine?.title ?? 'Rutina'}
+                              <Link2 size={11} className="text-primary" /> {a.routine?.title ?? t('shared.treatmentPlan.routine')}
                             </p>
                           ))}
                         </div>
@@ -225,7 +225,7 @@ export function TreatmentPlanSection({ patientId }: { patientId: string }) {
                       {unassigned.length > 0 && (
                         <select defaultValue="" onChange={e => attachAssignment(plan.id, phase.id, e.target.value)}
                           className="text-xs bg-surface-container border border-surface-container-high rounded-lg px-2 py-1.5 w-full">
-                          <option value="">+ Vincular rutina asignada…</option>
+                          <option value="">{t('shared.treatmentPlan.linkRoutine')}</option>
                           {unassigned.map(a => <option key={a.id} value={a.id}>{a.routine?.title ?? a.id}</option>)}
                         </select>
                       )}
@@ -233,17 +233,17 @@ export function TreatmentPlanSection({ patientId }: { patientId: string }) {
                   ))}
 
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <input className={`${inputCls} flex-1`} placeholder="Nombre de la fase" value={pf.name}
+                    <input className={`${inputCls} flex-1`} placeholder={t('shared.treatmentPlan.phaseNamePlaceholder')} value={pf.name}
                       onChange={e => setPhaseForms(prev => ({ ...prev, [plan.id]: { ...pf, name: e.target.value } }))} />
-                    <input className={`${inputCls} sm:w-24`} type="number" min="1" placeholder="Orden" value={pf.order}
+                    <input className={`${inputCls} sm:w-24`} type="number" min="1" placeholder={t('shared.treatmentPlan.orderPlaceholder')} value={pf.order}
                       onChange={e => setPhaseForms(prev => ({ ...prev, [plan.id]: { ...pf, order: e.target.value } }))} />
-                    <input className={`${inputCls} sm:w-28`} type="number" min="1" placeholder="Semanas" value={pf.durationWeeks}
+                    <input className={`${inputCls} sm:w-28`} type="number" min="1" placeholder={t('shared.treatmentPlan.weeksPlaceholder')} value={pf.durationWeeks}
                       onChange={e => setPhaseForms(prev => ({ ...prev, [plan.id]: { ...pf, durationWeeks: e.target.value } }))} />
                     <Button onClick={() => addPhase(plan.id)} disabled={savingPhase === plan.id || !pf.name.trim()} className="py-2 px-3 text-sm whitespace-nowrap">
                       <Plus size={15} />
                     </Button>
                   </div>
-                  <input className={inputCls} placeholder="Objetivos de la fase (opcional)" value={pf.objectives}
+                  <input className={inputCls} placeholder={t('shared.treatmentPlan.phaseObjectivesPlaceholder')} value={pf.objectives}
                     onChange={e => setPhaseForms(prev => ({ ...prev, [plan.id]: { ...pf, objectives: e.target.value } }))} />
                 </div>
               )}

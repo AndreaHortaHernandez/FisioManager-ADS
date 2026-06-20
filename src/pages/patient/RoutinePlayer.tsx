@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
@@ -8,6 +9,7 @@ import { cn } from '../../utils/cn';
 import { sessionApi } from '../../services/session.api';
 
 export function RoutinePlayer() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
   const allRoutines = useStore(state => state.routines);
@@ -53,6 +55,7 @@ export function RoutinePlayer() {
         setTimeLeft(prev => prev - 1);
       }, 1000);
     } else if (isPlaying && timeLeft === 0) {
+      // eslint-disable-next-line
       handlePhaseComplete('COMPLETED');
     }
 
@@ -138,8 +141,8 @@ export function RoutinePlayer() {
   if (!routine) {
     return (
       <div className="flex flex-col items-center justify-center p-8">
-        <p className="text-on-surface-variant">Routine not found.</p>
-        <Button onClick={() => navigate('/patient')} className="mt-4">Go Back</Button>
+        <p className="text-on-surface-variant">{t('patient.player.notFound')}</p>
+        <Button onClick={() => navigate('/patient')} className="mt-4">{t('patient.player.goBack')}</Button>
       </div>
     );
   }
@@ -157,14 +160,13 @@ export function RoutinePlayer() {
 
   return (
     <div className="h-[calc(100vh-80px)] flex flex-col pt-4 animate-fade-in">
-      {}
       <div className="mb-6">
         <div className="flex justify-between items-end mb-2">
            <p className="text-sm font-bold text-on-surface-variant uppercase tracking-wider">
-             {phase === 'EXERCISE' ? 'Active Exercise' : 'Resting'}
+             {phase === 'EXERCISE' ? t('patient.player.activeExercise') : t('patient.player.resting')}
            </p>
            <p className="text-xs font-bold text-primary">
-             Step {currentIndex + 1} of {routine.activities.length}
+             {t('patient.player.stepOf', { current: currentIndex + 1, total: routine.activities.length })}
            </p>
         </div>
         <div className="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
@@ -181,33 +183,31 @@ export function RoutinePlayer() {
              <div className="w-24 h-24 bg-primary rounded-full text-white flex items-center justify-center shadow-ambient mb-6 scale-in">
                 <CheckCircle2 size={48} />
              </div>
-             <h1 className="text-3xl font-display font-bold text-on-surface mb-2">Routine Complete!</h1>
-             <p className="text-on-surface-variant mb-8">You're one step closer to your weekly goal.</p>
+             <h1 className="text-3xl font-display font-bold text-on-surface mb-2">{t('patient.player.complete')}</h1>
+             <p className="text-on-surface-variant mb-8">{t('patient.player.completeDesc')}</p>
              <Button fullWidth onClick={handleFinishRoutine}>
-                Claim Progress & Return
+                {t('patient.player.claimProgress')}
              </Button>
           </div>
         ) : (
           <div className="space-y-6">
-            {}
             <div className={cn(
               "w-full aspect-video rounded-3xl overflow-hidden flex items-center justify-center transition-colors duration-1000",
               phase === 'REST' ? "bg-secondary-container" : "bg-surface-container-lowest border border-ghost shadow-ambient"
             )}>
               {phase === 'REST' ? (
                  <div className="text-center animate-pulse">
-                   <p className="text-secondary font-display font-bold text-2xl mb-2">Relax</p>
-                   <p className="text-on-secondary-container text-sm">Breathe deeply</p>
+                   <p className="text-secondary font-display font-bold text-2xl mb-2">{t('patient.player.relax')}</p>
+                   <p className="text-on-secondary-container text-sm">{t('patient.player.breatheDeeply')}</p>
                  </div>
               ) : (
                  <div className="text-center">
                    <span className="text-6xl mb-2 block opacity-20">🎥</span>
-                   <p className="text-on-surface-variant text-sm font-bold opacity-50">Instructor Video</p>
+                   <p className="text-on-surface-variant text-sm font-bold opacity-50">{t('patient.player.instructorVideo')}</p>
                  </div>
               )}
             </div>
 
-            {}
             <Card className="text-center py-6 shadow-ambient">
               <h2 className="text-2xl font-display font-bold text-on-surface mb-2">
                 {currentActivity.title}
@@ -216,7 +216,6 @@ export function RoutinePlayer() {
                 {currentActivity.description}
               </p>
 
-              {}
               <div className="flex flex-col items-center justify-center mb-2">
                 <p className={cn(
                   "text-6xl font-display font-black font-variant-numeric tracking-tight transition-colors duration-300",
@@ -225,21 +224,20 @@ export function RoutinePlayer() {
                   {formatTime(timeLeft)}
                 </p>
                 <p className="text-xs font-bold uppercase tracking-widest text-on-surface-variant mt-2">
-                  Time Remaining
+                  {t('patient.player.timeRemaining')}
                 </p>
               </div>
             </Card>
 
-            {}
             {phase === 'EXERCISE' && (
               <div className="flex gap-4 px-2">
                 <div className="flex-1 bg-surface-container-low rounded-2xl p-4 text-center border-ghost">
-                   <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wider mb-1">Set / Reps</p>
-                   <p className="text-xl font-display font-bold">{currentRepetition} of {currentActivity.repetitions}</p>
+                   <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wider mb-1">{t('patient.player.setReps')}</p>
+                   <p className="text-xl font-display font-bold">{t('patient.player.repsOf', { current: currentRepetition, total: currentActivity.repetitions })}</p>
                 </div>
                 <div className="flex-1 bg-surface-container-low rounded-2xl p-4 text-center border-ghost">
-                   <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wider mb-1">Duration</p>
-                   <p className="text-xl font-display font-bold">{currentActivity.durationMinutes}m</p>
+                   <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wider mb-1">{t('patient.player.duration')}</p>
+                   <p className="text-xl font-display font-bold">{t('patient.player.minutes', { count: currentActivity.durationMinutes })}</p>
                 </div>
               </div>
             )}
@@ -247,10 +245,8 @@ export function RoutinePlayer() {
         )}
       </div>
 
-      {}
       {!isRoutineFinished && (
         <div className="fixed bottom-24 left-4 right-4 bg-surface/80 backdrop-blur-md p-4 rounded-3xl shadow-ambient border-ghost border flex gap-3 items-center animate-slide-up z-40">
-           {}
            <button
              onClick={() => setIsPlaying(!isPlaying)}
              className={cn(
@@ -263,26 +259,24 @@ export function RoutinePlayer() {
 
            <div className="flex-1 text-center">
              <p className="text-xs text-on-surface-variant font-bold tracking-wider">
-                {isPlaying ? 'ACTIVE' : 'PAUSED'}
+                {isPlaying ? t('patient.player.active') : t('patient.player.paused')}
              </p>
            </div>
 
-           {}
            <button
              onClick={handleOmitir}
              className="flex items-center gap-1 text-xs font-bold text-on-surface-variant hover:text-error transition-colors px-2"
            >
              <SkipForward size={16} />
-             Omitir
+             {t('patient.player.skip')}
            </button>
 
-           {}
            <Button
              onClick={() => handlePhaseComplete('COMPLETED')}
              disabled={timeLeft > 0}
              className="flex items-center gap-1 rounded-full px-5"
            >
-             Next <ChevronRight size={18} />
+             {t('patient.player.next')} <ChevronRight size={18} />
            </Button>
         </div>
       )}

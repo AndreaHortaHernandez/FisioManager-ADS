@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
 export function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const login = useStore(state => state.login);
 
@@ -22,7 +24,7 @@ export function LoginPage() {
       await login(email, password);
       navigate('/', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error');
+      setError(err instanceof Error ? err.message : t('auth.genericError'));
     } finally {
       setLoading(false);
     }
@@ -39,12 +41,12 @@ export function LoginPage() {
             <div className="w-7 h-7 rounded-full bg-white opacity-80" />
           </div>
           <h1 className="text-3xl font-display font-bold text-on-surface">FisioManager</h1>
-          <p className="text-on-surface-variant mt-1 font-body">Inicia sesión para continuar</p>
+          <p className="text-on-surface-variant mt-1 font-body">{t('auth.loginSubtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
-            label="Correo electrónico"
+            label={t('auth.email')}
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
@@ -52,7 +54,7 @@ export function LoginPage() {
             required
           />
           <Input
-            label="Contraseña"
+            label={t('auth.password')}
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
@@ -67,16 +69,16 @@ export function LoginPage() {
           )}
 
           <Button type="submit" className="w-full mt-2" disabled={loading}>
-            {loading ? 'Ingresando...' : 'Iniciar sesión'}
+            {loading ? t('auth.signingIn') : t('auth.loginTitle')}
           </Button>
 
           <p className="text-center text-sm">
-            <Link to="/forgot-password" className="text-primary font-bold hover:underline">¿Olvidaste tu contraseña?</Link>
+            <Link to="/forgot-password" className="text-primary font-bold hover:underline">{t('auth.forgotPassword')}</Link>
           </p>
         </form>
 
         <div className="mt-8 p-4 bg-surface-container rounded-xl border-ghost text-xs text-on-surface-variant font-body space-y-1">
-          <p className="font-bold text-on-surface mb-2">Cuentas de prueba:</p>
+          <p className="font-bold text-on-surface mb-2">{t('auth.testAccounts')}</p>
           <p>👩‍⚕️ sarah@fisiomanager.com / therapist123</p>
           <p>🧑 michael@fisiomanager.com / patient123</p>
           <p>👩 elena@fisiomanager.com / patient123</p>

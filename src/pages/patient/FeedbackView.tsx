@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Mic, Square, ArrowRight, CheckCircle, AlertCircle, Loader2, Sparkles } from 'lucide-react';
@@ -6,12 +7,12 @@ import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import type { Feedback } from '../../types';
 
-const EMOTIONAL_OPTIONS: { value: Feedback['emotionalState']; label: string; emoji: string }[] = [
-  { value: 'GREAT',    label: 'Excelente', emoji: '😄' },
-  { value: 'GOOD',     label: 'Bien',      emoji: '🙂' },
-  { value: 'OK',       label: 'Regular',   emoji: '😐' },
-  { value: 'BAD',      label: 'Mal',       emoji: '😟' },
-  { value: 'TERRIBLE', label: 'Terrible',  emoji: '😣' },
+const EMOTIONAL_OPTIONS: { value: Feedback['emotionalState']; labelKey: string; emoji: string }[] = [
+  { value: 'GREAT',    labelKey: 'patient.emotions.great', emoji: '😄' },
+  { value: 'GOOD',     labelKey: 'patient.emotions.good',  emoji: '🙂' },
+  { value: 'OK',       labelKey: 'patient.emotions.ok',    emoji: '😐' },
+  { value: 'BAD',      labelKey: 'patient.emotions.bad',   emoji: '😟' },
+  { value: 'TERRIBLE', labelKey: 'patient.emotions.terrible', emoji: '😣' },
 ];
 
 type RecordState = 'IDLE' | 'RECORDING' | 'PROCESSING' | 'DONE';
@@ -19,6 +20,7 @@ type RecordState = 'IDLE' | 'RECORDING' | 'PROCESSING' | 'DONE';
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
 export function FeedbackView() {
+  const { t } = useTranslation();
   const navigate        = useNavigate();
   const addFeedback     = useStore(state => state.addFeedback);
   const currentUserId   = useStore(state => state.currentUser);
@@ -71,7 +73,7 @@ export function FeedbackView() {
       recorder.start();
       setRecordState('RECORDING');
     } catch {
-      setMicError('No se pudo acceder al micrófono. Verifica los permisos del navegador.');
+      setMicError(t('patient.feedback.micError'));
     }
   };
 
@@ -125,7 +127,7 @@ export function FeedbackView() {
       });
       navigate('/patient');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al enviar feedback');
+      setError(err instanceof Error ? err.message : t('patient.feedback.submitError'));
     } finally {
       setLoading(false);
     }
@@ -134,8 +136,8 @@ export function FeedbackView() {
   if (!lastCompleted) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center">
-        <p className="text-on-surface-variant font-body">Completa una rutina primero para dejar feedback.</p>
-        <Button className="mt-4" onClick={() => navigate('/patient')}>Volver</Button>
+        <p className="text-on-surface-variant font-body">{t('patient.feedback.noRoutine')}</p>
+        <Button className="mt-4" onClick={() => navigate('/patient')}>{t('patient.feedback.back')}</Button>
       </div>
     );
   }
@@ -143,14 +145,13 @@ export function FeedbackView() {
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       <header>
-        <h1 className="text-3xl font-display font-bold text-on-surface mb-2">¡Sesión Completada!</h1>
-        <p className="text-on-surface-variant font-body mb-1">Cuéntale a tu terapeuta cómo te sentiste.</p>
+        <h1 className="text-3xl font-display font-bold text-on-surface mb-2">{t('patient.feedback.sessionComplete')}</h1>
+        <p className="text-on-surface-variant font-body mb-1">{t('patient.feedback.tellTherapist')}</p>
         <p className="text-xs text-primary font-bold">{lastCompleted.title}</p>
       </header>
 
-      {}
       <Card className="space-y-4">
-        <h2 className="text-lg font-display font-bold">¿Cómo te sientes?</h2>
+        <h2 className="text-lg font-display font-bold">{t('patient.feedback.howFeel')}</h2>
         <div className="flex justify-between">
           {EMOTIONAL_OPTIONS.map(opt => (
             <button
@@ -161,19 +162,18 @@ export function FeedbackView() {
               }`}
             >
               <span className="text-2xl">{opt.emoji}</span>
-              <span className="text-[10px] font-bold text-on-surface-variant">{opt.label}</span>
+              <span className="text-[10px] font-bold text-on-surface-variant">{t(opt.labelKey)}</span>
             </button>
           ))}
         </div>
       </Card>
 
-      {}
       <Card className="space-y-4">
-        <h2 className="text-lg font-display font-bold">Nivel de Dolor</h2>
-        <p className="text-sm text-on-surface-variant">Del 1 al 10, ¿cuánto dolor sentiste?</p>
+        <h2 className="text-lg font-display font-bold">{t('patient.feedback.painLevel')}</h2>
+        <p className="text-sm text-on-surface-variant">{t('patient.feedback.painQuestion')}</p>
         <div className="flex justify-between items-center px-2">
-          <span className="text-sm font-bold text-secondary">1 (Ninguno)</span>
-          <span className="text-sm font-bold text-error">10 (Severo)</span>
+          <span className="text-sm font-bold text-secondary">{t('patient.feedback.painNone')}</span>
+          <span className="text-sm font-bold text-error">{t('patient.feedback.painSevere')}</span>
         </div>
         <input
           type="range" min="1" max="10"
@@ -186,11 +186,10 @@ export function FeedbackView() {
         </div>
       </Card>
 
-      {}
       <Card level={2} className="space-y-4">
         <div>
-          <h2 className="text-lg font-display font-bold">Nota de voz</h2>
-          <p className="text-sm text-on-surface-variant">Graba un mensaje sobre tu sesión (opcional).</p>
+          <h2 className="text-lg font-display font-bold">{t('patient.feedback.voiceNote')}</h2>
+          <p className="text-sm text-on-surface-variant">{t('patient.feedback.voiceNoteDesc')}</p>
         </div>
 
         <div className="flex flex-col items-center gap-3 py-2">
@@ -222,24 +221,22 @@ export function FeedbackView() {
           )}
 
           <p className="font-bold text-on-surface text-sm text-center">
-            {recordState === 'IDLE'       && 'Toca para grabar'}
-            {recordState === 'RECORDING'  && 'Grabando… toca para detener'}
-            {recordState === 'PROCESSING' && 'Procesando con IA…'}
-            {recordState === 'DONE'       && 'Audio listo'}
+            {recordState === 'IDLE'       && t('patient.feedback.recordIdle')}
+            {recordState === 'RECORDING'  && t('patient.feedback.recordRecording')}
+            {recordState === 'PROCESSING' && t('patient.feedback.recordProcessing')}
+            {recordState === 'DONE'       && t('patient.feedback.recordDone')}
           </p>
         </div>
 
-        {}
         {previewUrl && recordState === 'DONE' && (
           <audio controls src={previewUrl} className="w-full rounded-xl" />
         )}
 
-        {}
         {recordState === 'DONE' && (transcript || aiSummary) && (
           <div className="space-y-2">
             {transcript && (
               <div className="bg-surface-container rounded-xl p-3">
-                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wide mb-1">Transcript (Whisper)</p>
+                <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wide mb-1">{t('patient.feedback.transcriptLabel')}</p>
                 <p className="text-sm text-on-surface">{transcript}</p>
               </div>
             )}
@@ -247,7 +244,7 @@ export function FeedbackView() {
               <div className="bg-primary/8 rounded-xl p-3 flex gap-2">
                 <Sparkles size={16} className="text-primary shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-bold text-primary uppercase tracking-wide mb-1">Resumen clínico (Llama)</p>
+                  <p className="text-xs font-bold text-primary uppercase tracking-wide mb-1">{t('patient.feedback.clinicalSummaryLabel')}</p>
                   <p className="text-sm text-on-surface">{aiSummary}</p>
                 </div>
               </div>
@@ -257,7 +254,7 @@ export function FeedbackView() {
 
         {recordState === 'DONE' && !transcript && !aiSummary && (
           <p className="text-xs text-on-surface-variant text-center">
-            Audio guardado. IA no disponible en este momento.
+            {t('patient.feedback.aiUnavailable')}
           </p>
         )}
 
@@ -272,7 +269,7 @@ export function FeedbackView() {
             onClick={() => { setRecordState('IDLE'); setPreviewUrl(null); setTranscript(''); setAiSummary(''); }}
             className="text-xs text-on-surface-variant hover:text-primary underline transition-colors w-full text-center"
           >
-            Grabar de nuevo
+            {t('patient.feedback.recordAgain')}
           </button>
         )}
       </Card>
@@ -287,23 +284,22 @@ export function FeedbackView() {
         onClick={handleSubmit}
         disabled={recordState === 'RECORDING' || recordState === 'PROCESSING' || loading}
       >
-        {loading ? 'Enviando...' : 'Enviar Feedback'} <ArrowRight size={20} />
+        {loading ? t('patient.feedback.sending') : t('patient.feedback.submit')} <ArrowRight size={20} />
       </Button>
 
       {showConsent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="max-w-sm space-y-4">
-            <h2 className="text-lg font-display font-bold">Consentimiento de grabación</h2>
+            <h2 className="text-lg font-display font-bold">{t('patient.feedback.consentTitle')}</h2>
             <p className="text-sm text-on-surface-variant">
-              Para registrar tu feedback por voz necesitamos tu consentimiento para grabar el audio y procesarlo
-              con inteligencia artificial (transcripción y resumen clínico). Puedes seguir usando la app sin grabar audio.
+              {t('patient.feedback.consentBody')}
             </p>
             <div className="flex gap-3">
               <button onClick={() => setShowConsent(false)}
                 className="flex-1 py-2.5 rounded-xl border border-surface-container-high text-sm hover:bg-surface-container transition-colors">
-                Cancelar
+                {t('common.cancel')}
               </button>
-              <Button onClick={acceptConsentAndRecord} className="flex-1">Aceptar y grabar</Button>
+              <Button onClick={acceptConsentAndRecord} className="flex-1">{t('patient.feedback.consentAccept')}</Button>
             </div>
           </Card>
         </div>

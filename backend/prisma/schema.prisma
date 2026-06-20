@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -37,6 +37,7 @@ model User {
   therapistPlans        TreatmentPlan[]         @relation("PlanTherapist")
   notificationPreference NotificationPreference?
   refreshTokens         RefreshToken[]
+  notifications         Notification[]
 }
 
 model PatientProfile {
@@ -171,6 +172,7 @@ model Appointment {
   treatmentPlanId String? // plan de tratamiento asociado (contexto clínico de la consulta)
   notes           String?
   reminded24h     Boolean  @default(false)
+  recurrenceGroupId String? // agrupa las instancias de una serie de citas recurrentes
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -306,4 +308,125 @@ model RefreshToken {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Bitácora de auditoría (acciones sensibles: login, acceso a historial, etc.) ──
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String? // null para acciones sin sesión (p. ej. intento de login fallido)
+  action    String // LOGIN | LOGOUT | VIEW_CLINICAL_HISTORY | UPLOAD_DOCUMENT | ...
+  entity    String // User | ClinicalHistory | Appointment | ...
+  entityId  String?
+  metadata  String? // JSON serializado con contexto adicional
+  ip        String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ── Mapa corporal de dolor (puntos marcados junto al feedback) ───────────────
+model PainPoint {
+  id         String   @id @default(cuid())
+  feedbackId String?
+  patientId  String
+  bodyPart   String // KNEE | BACK | SHOULDER | NECK | ARM | HIP | ANKLE | OTHER
+  side       String? // LEFT | RIGHT | CENTER
+  intensity  Int // 1-10
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@index([patientId])
+  @@index([feedbackId])
+}
+
+// ── Escalas de resultado (ROM, fuerza, escalas funcionales, VAS) ─────────────
+model OutcomeMeasure {
+  id          String   @id @default(cuid())
+  patientId   String
+  therapistId String
+  type        String // ROM | STRENGTH | FUNCTIONAL | VAS
+  label       String? // p. ej. "Flexión de rodilla"
+  value       Float
+  unit        String? // grados, kg, %, etc.
+  measuredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([patientId, type])
+}
+
+// ── Documentos clínicos (radiografías, laboratorios, consentimientos, etc.) ──
+model ClinicalDocument {
+  id         String   @id @default(cuid())
+  patientId  String
+  uploaderId String
+  fileName   String
+  fileUrl    String
+  mimeType   String
+  sizeBytes  Int
+  category   String   @default("OTHER") // XRAY | LAB | CONSENT | REPORT | OTHER
+  isVisible  Boolean  @default(false) // visible para el paciente
+  createdAt  DateTime @default(now())
+
+  @@index([patientId])
+}
+
+// ── Lista de espera de citas ─────────────────────────────────────────────────
+model Waitlist {
+  id          String   @id @default(cuid())
+  patientId   String
+  therapistId String
+  desiredFrom DateTime
+  desiredTo   DateTime
+  status      String   @default("WAITING") // WAITING | NOTIFIED | FULFILLED | CANCELLED
+  createdAt   DateTime @default(now())
+
+  @@index([therapistId, status])
+  @@index([patientId])
+}
+
+// ── Mensajería paciente ↔ terapeuta ─────────────────────────────────────────
+model Conversation {
+  id            String   @id @default(cuid())
+  patientId     String
+  therapistId   String
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  messages Message[]
+
+  @@unique([patientId, therapistId])
+  @@index([patientId])
+  @@index([therapistId])
+}
+
+model Message {
+  id             String    @id @default(cuid())
+  conversationId String
+  senderId       String
+  content        String
+  readAt         DateTime?
+  createdAt      DateTime  @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+// ── Notificaciones in-app (centro de notificaciones / campana) ───────────────
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String // APPOINTMENT | ROUTINE | HIGH_PAIN | MESSAGE | SYSTEM
+  title     String
+  body      String
+  linkUrl   String? // ruta del frontend a la que navega al hacer clic
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
 }

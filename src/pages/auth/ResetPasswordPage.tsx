@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '../../services/auth.api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
 export function ResetPasswordPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') ?? '';
@@ -20,7 +22,7 @@ export function ResetPasswordPage() {
     setError('');
 
     if (password !== confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      setError(t('auth.passwordsDoNotMatch'));
       return;
     }
 
@@ -29,7 +31,7 @@ export function ResetPasswordPage() {
       await authApi.reset(token, password);
       navigate('/login', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error');
+      setError(err instanceof Error ? err.message : t('auth.genericError'));
     } finally {
       setLoading(false);
     }
@@ -46,18 +48,18 @@ export function ResetPasswordPage() {
             <div className="w-7 h-7 rounded-full bg-white opacity-80" />
           </div>
           <h1 className="text-3xl font-display font-bold text-on-surface">FisioManager</h1>
-          <p className="text-on-surface-variant mt-1 font-body">Establece tu nueva contraseña</p>
+          <p className="text-on-surface-variant mt-1 font-body">{t('auth.resetSubtitle')}</p>
         </div>
 
         {!token ? (
           <div className="bg-error-container/30 rounded-xl p-4 text-sm text-error font-body space-y-3">
-            <p>El enlace de recuperación no es válido. Solicita uno nuevo.</p>
-            <Link to="/forgot-password" className="text-primary font-bold hover:underline">Solicitar enlace</Link>
+            <p>{t('auth.invalidResetLink')}</p>
+            <Link to="/forgot-password" className="text-primary font-bold hover:underline">{t('auth.requestLink')}</Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Nueva contraseña"
+              label={t('auth.newPassword')}
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -66,7 +68,7 @@ export function ResetPasswordPage() {
               minLength={6}
             />
             <Input
-              label="Confirmar contraseña"
+              label={t('auth.confirmPassword')}
               type="password"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
@@ -82,7 +84,7 @@ export function ResetPasswordPage() {
             )}
 
             <Button type="submit" className="w-full mt-2" disabled={loading}>
-              {loading ? 'Guardando...' : 'Restablecer contraseña'}
+              {loading ? t('auth.saving') : t('auth.resetPassword')}
             </Button>
           </form>
         )}

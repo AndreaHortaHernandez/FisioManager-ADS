@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../errors/AppError';
 import { logger } from '../lib/logger';
+import { captureException } from '../lib/observability';
 
 export function errorMiddleware(
   err: Error,
@@ -11,6 +12,7 @@ export function errorMiddleware(
   if (err instanceof AppError) {
     if (err.statusCode >= 500) {
       logger.error('app_error', { correlationId: req.correlationId, message: err.message, code: err.code });
+      captureException(err, { correlationId: req.correlationId });
     }
     res.status(err.statusCode).json({
       success: false,
@@ -21,5 +23,6 @@ export function errorMiddleware(
   }
 
   logger.error('unhandled_error', { correlationId: req.correlationId, message: err.message, stack: err.stack });
+  captureException(err, { correlationId: req.correlationId, path: req.originalUrl });
   res.status(500).json({ success: false, message: 'Error interno del servidor' });
 }

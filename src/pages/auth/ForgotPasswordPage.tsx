@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { authApi } from '../../services/auth.api';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 
 export function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
@@ -19,7 +21,7 @@ export function ForgotPasswordPage() {
       await authApi.recover(email);
       setSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error');
+      setError(err instanceof Error ? err.message : t('auth.genericError'));
     } finally {
       setLoading(false);
     }
@@ -36,18 +38,18 @@ export function ForgotPasswordPage() {
             <div className="w-7 h-7 rounded-full bg-white opacity-80" />
           </div>
           <h1 className="text-3xl font-display font-bold text-on-surface">FisioManager</h1>
-          <p className="text-on-surface-variant mt-1 font-body">Recupera tu contraseña</p>
+          <p className="text-on-surface-variant mt-1 font-body">{t('auth.forgotSubtitle')}</p>
         </div>
 
         {sent ? (
           <div className="bg-surface-container rounded-xl p-4 text-sm text-on-surface font-body space-y-3">
-            <p>Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.</p>
-            <Link to="/login" className="text-primary font-bold hover:underline">Volver a iniciar sesión</Link>
+            <p>{t('auth.recoverSentMessage')}</p>
+            <Link to="/login" className="text-primary font-bold hover:underline">{t('auth.backToLogin')}</Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Correo electrónico"
+              label={t('auth.email')}
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -62,11 +64,11 @@ export function ForgotPasswordPage() {
             )}
 
             <Button type="submit" className="w-full mt-2" disabled={loading}>
-              {loading ? 'Enviando...' : 'Enviar instrucciones'}
+              {loading ? t('auth.sending') : t('auth.sendInstructions')}
             </Button>
 
             <p className="text-center text-sm text-on-surface-variant font-body">
-              <Link to="/login" className="text-primary font-bold hover:underline">Volver a iniciar sesión</Link>
+              <Link to="/login" className="text-primary font-bold hover:underline">{t('auth.backToLogin')}</Link>
             </p>
           </form>
         )}

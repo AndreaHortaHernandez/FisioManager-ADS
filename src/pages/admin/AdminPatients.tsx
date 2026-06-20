@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, User, Mail, Phone, ToggleLeft, ToggleRight } from 'lucide-react';
 import { adminApi } from '../../services/admin.api';
 import type { Therapist } from '../../types';
@@ -13,6 +14,7 @@ type PatientRow = {
 const emptyForm = { name: '', email: '', password: '', phone: '', age: '', condition: '', therapistId: '' };
 
 export function AdminPatients() {
+  const { t } = useTranslation();
   const [patients, setPatients] = useState<PatientRow[]>([]);
   const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -43,7 +45,7 @@ export function AdminPatients() {
       });
       setPatients(prev => [created as PatientRow, ...prev]);
       setShowForm(false);
-      setSuccess(`Paciente ${form.name} registrado correctamente.`);
+      setSuccess(t('admin.patients.registeredSuccess', { name: form.name }));
     } catch (e: unknown) {
       setError((e as Error).message);
     }
@@ -61,12 +63,12 @@ export function AdminPatients() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold">Pacientes</h1>
-          <p className="text-on-surface-variant">Registro y listado de pacientes</p>
+          <h1 className="text-3xl font-display font-bold">{t('admin.patients.title')}</h1>
+          <p className="text-on-surface-variant">{t('admin.patients.subtitle')}</p>
         </div>
         <button onClick={openForm}
           className="flex items-center gap-2 bg-primary text-on-primary px-4 py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity">
-          <Plus size={18} /> Registrar paciente
+          <Plus size={18} /> {t('admin.patients.register')}
         </button>
       </div>
 
@@ -77,15 +79,15 @@ export function AdminPatients() {
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-display font-bold mb-4">Nuevo paciente</h2>
+            <h2 className="text-xl font-display font-bold mb-4">{t('admin.patients.newTitle')}</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               {[
-                { label: 'Nombre completo', key: 'name', type: 'text', required: true },
-                { label: 'Correo electrónico', key: 'email', type: 'email', required: true },
-                { label: 'Contraseña inicial', key: 'password', type: 'password', required: true },
-                { label: 'Teléfono', key: 'phone', type: 'tel', required: false },
-                { label: 'Edad', key: 'age', type: 'number', required: true },
-                { label: 'Padecimiento / Diagnóstico', key: 'condition', type: 'text', required: true },
+                { label: t('admin.patients.fullName'), key: 'name', type: 'text', required: true },
+                { label: t('admin.patients.email'), key: 'email', type: 'email', required: true },
+                { label: t('admin.patients.initialPassword'), key: 'password', type: 'password', required: true },
+                { label: t('admin.patients.phone'), key: 'phone', type: 'tel', required: false },
+                { label: t('admin.patients.age'), key: 'age', type: 'number', required: true },
+                { label: t('admin.patients.condition'), key: 'condition', type: 'text', required: true },
               ].map(({ label, key, type, required }) => (
                 <div key={key}>
                   <label className="text-sm text-on-surface-variant mb-1 block">{label}</label>
@@ -95,10 +97,10 @@ export function AdminPatients() {
                 </div>
               ))}
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Terapeuta asignado</label>
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.patients.assignedTherapist')}</label>
                 <select required value={form.therapistId} onChange={f('therapistId')}
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm">
-                  <option value="">Seleccionar...</option>
+                  <option value="">{t('admin.patients.select')}</option>
                   {therapists.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               </div>
@@ -106,11 +108,11 @@ export function AdminPatients() {
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowForm(false)}
                   className="flex-1 py-2.5 rounded-xl border border-surface-container-high text-sm hover:bg-surface-container transition-colors">
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button type="submit"
                   className="flex-1 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition-opacity">
-                  Registrar
+                  {t('admin.patients.registerAction')}
                 </button>
               </div>
             </form>
@@ -122,16 +124,16 @@ export function AdminPatients() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-surface-container-high">
-              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Paciente</th>
-              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Contacto</th>
-              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Padecimiento</th>
-              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Edad</th>
-              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Estado</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">{t('admin.patients.colPatient')}</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">{t('admin.patients.colContact')}</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">{t('admin.patients.colCondition')}</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">{t('admin.patients.colAge')}</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">{t('admin.patients.colStatus')}</th>
             </tr>
           </thead>
           <tbody>
             {patients.length === 0 && (
-              <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">Sin pacientes registrados</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">{t('admin.patients.empty')}</td></tr>
             )}
             {patients.map(p => (
               <tr key={p.id} className="border-b border-surface-container-high last:border-0 hover:bg-surface transition-colors">
@@ -153,10 +155,10 @@ export function AdminPatients() {
                 <td className="p-4">
                   <button onClick={() => handleToggle(p)}
                     className="flex items-center gap-1.5 text-sm transition-colors"
-                    title={p.isActive ? 'Desactivar' : 'Activar'}>
+                    title={p.isActive ? t('admin.patients.deactivate') : t('admin.patients.activate')}>
                     {p.isActive
-                      ? <><ToggleRight size={22} className="text-primary" /><span className="text-primary font-medium">Activo</span></>
-                      : <><ToggleLeft size={22} className="text-on-surface-variant" /><span className="text-on-surface-variant">Inactivo</span></>
+                      ? <><ToggleRight size={22} className="text-primary" /><span className="text-primary font-medium">{t('admin.patients.active')}</span></>
+                      : <><ToggleLeft size={22} className="text-on-surface-variant" /><span className="text-on-surface-variant">{t('admin.patients.inactive')}</span></>
                     }
                   </button>
                 </td>

@@ -1,7 +1,9 @@
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Calendar, Users, UserPlus, Stethoscope, LogOut, DoorOpen } from 'lucide-react';
+import { LayoutDashboard, Calendar, Users, UserPlus, Stethoscope, LogOut, DoorOpen, ShieldCheck } from 'lucide-react';
 import { cn } from '../../utils/cn';
 import { useStore } from '../../store/useStore';
+import { NotificationBell } from '../NotificationBell';
+import { ThemeToggle } from '../ThemeToggle';
 
 export function AdminLayout() {
   const navigate = useNavigate();
@@ -17,18 +19,25 @@ export function AdminLayout() {
     { label: 'Salas', path: '/admin/salas', icon: DoorOpen },
     { label: 'Asignaciones', path: '/admin/asignaciones', icon: UserPlus },
     { label: 'Usuarios', path: '/admin/usuarios', icon: Users },
+    { label: 'Auditoría', path: '/admin/auditoria', icon: ShieldCheck },
   ];
 
   return (
-    <div className="min-h-screen bg-background flex text-on-surface">
-      <aside className="w-64 bg-surface-container-lowest border-r border-surface-container-high flex flex-col pt-8 pb-4">
-        <div className="px-8 mb-8">
-          <h1 className="text-xl font-display font-bold text-primary flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-              <div className="w-4 h-4 rounded-full bg-white opacity-80 mix-blend-overlay" />
+    <div className="h-screen bg-background flex text-on-surface overflow-hidden">
+      <aside className="w-64 shrink-0 h-full relative z-20 bg-surface-container-lowest border-r border-surface-container-high flex flex-col pt-8 pb-4">
+        <div className="px-4 mb-8">
+          <div className="flex items-center justify-between gap-1">
+            <h1 className="text-lg font-display font-bold text-primary flex items-center gap-2 min-w-0 truncate">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+                <div className="w-4 h-4 rounded-full bg-white opacity-80 mix-blend-overlay" />
+              </div>
+              FisioManager
+            </h1>
+            <div className="flex items-center shrink-0">
+              <ThemeToggle className="p-1.5" />
+              <NotificationBell fullViewPath="/admin/notificaciones" align="left" />
             </div>
-            FisioManager
-          </h1>
+          </div>
           <p className="text-xs text-on-surface-variant mt-1 ml-10">Panel Admin</p>
         </div>
 
@@ -76,7 +85,7 @@ export function AdminLayout() {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto bg-surface-bright relative">
+      <main className="flex-1 min-w-0 h-full overflow-y-auto overflow-x-hidden bg-surface-bright relative">
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary-container rounded-full mix-blend-multiply filter blur-[100px] opacity-5 pointer-events-none" />
         <div className="p-10 max-w-7xl mx-auto relative z-10">
           <Outlet />

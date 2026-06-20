@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, DoorOpen, MapPin, Users, Wrench, Trash2 } from 'lucide-react';
 import { roomsApi, type Room } from '../../services/rooms.api';
 
 const emptyForm = { name: '', location: '', capacity: '1', equipment: '' };
 
 export function AdminRooms() {
+  const { t } = useTranslation();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -49,49 +51,49 @@ export function AdminRooms() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold">Salas</h1>
-          <p className="text-on-surface-variant">Consultorios y salas de la clínica</p>
+          <h1 className="text-3xl font-display font-bold">{t('admin.rooms.title')}</h1>
+          <p className="text-on-surface-variant">{t('admin.rooms.subtitle')}</p>
         </div>
         <button onClick={openForm}
           className="flex items-center gap-2 bg-primary text-on-primary px-4 py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity">
-          <Plus size={18} /> Nueva sala
+          <Plus size={18} /> {t('admin.rooms.new')}
         </button>
       </div>
 
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-xl font-display font-bold mb-4">Nueva sala</h2>
+            <h2 className="text-xl font-display font-bold mb-4">{t('admin.rooms.newTitle')}</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Nombre</label>
-                <input required type="text" placeholder="Ej. Sala 1" value={form.name} onChange={f('name')}
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.rooms.name')}</label>
+                <input required type="text" placeholder={t('admin.rooms.namePlaceholder')} value={form.name} onChange={f('name')}
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
               </div>
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Ubicación</label>
-                <input type="text" placeholder="Ej. Planta baja" value={form.location} onChange={f('location')}
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.rooms.location')}</label>
+                <input type="text" placeholder={t('admin.rooms.locationPlaceholder')} value={form.location} onChange={f('location')}
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
               </div>
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Capacidad</label>
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.rooms.capacity')}</label>
                 <input type="number" min="1" value={form.capacity} onChange={f('capacity')}
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
               </div>
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Equipamiento</label>
-                <input type="text" placeholder="Ej. Camilla, banda elástica" value={form.equipment} onChange={f('equipment')}
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.rooms.equipment')}</label>
+                <input type="text" placeholder={t('admin.rooms.equipmentPlaceholder')} value={form.equipment} onChange={f('equipment')}
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
               </div>
               {error && <p className="text-sm text-error">{error}</p>}
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowForm(false)}
                   className="flex-1 py-2.5 rounded-xl border border-surface-container-high text-sm hover:bg-surface-container transition-colors">
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button type="submit"
                   className="flex-1 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition-opacity">
-                  Crear
+                  {t('admin.rooms.create')}
                 </button>
               </div>
             </form>
@@ -101,7 +103,7 @@ export function AdminRooms() {
 
       {rooms.length === 0 && (
         <div className="bg-surface-container rounded-2xl p-12 text-center text-on-surface-variant">
-          No hay salas registradas.
+          {t('admin.rooms.empty')}
         </div>
       )}
 
@@ -115,13 +117,13 @@ export function AdminRooms() {
                 </div>
                 <p className="font-bold">{r.name}</p>
               </div>
-              <button onClick={() => handleDelete(r.id)} title="Eliminar" className="text-on-surface-variant hover:text-error transition-colors">
+              <button onClick={() => handleDelete(r.id)} title={t('common.delete')} className="text-on-surface-variant hover:text-error transition-colors">
                 <Trash2 size={18} />
               </button>
             </div>
             <div className="space-y-1">
               {r.location && <p className="flex items-center gap-2 text-sm text-on-surface-variant"><MapPin size={13} /> {r.location}</p>}
-              <p className="flex items-center gap-2 text-sm text-on-surface-variant"><Users size={13} /> Capacidad: {r.capacity}</p>
+              <p className="flex items-center gap-2 text-sm text-on-surface-variant"><Users size={13} /> {t('admin.rooms.capacityLabel', { count: r.capacity })}</p>
               {r.equipment && <p className="flex items-center gap-2 text-sm text-on-surface-variant"><Wrench size={13} /> {r.equipment}</p>}
             </div>
           </div>

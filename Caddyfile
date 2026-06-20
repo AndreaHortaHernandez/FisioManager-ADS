@@ -1,0 +1,12 @@
+# Caddy: HTTPS automático (Let's Encrypt) en producción.
+# Requiere las variables DOMAIN y ACME_EMAIL (ver .env.example).
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode gzip
+	# Todo el tráfico va al nginx del frontend, que a su vez enruta
+	# /api, /uploads y /socket.io hacia el backend.
+	reverse_proxy frontend:80
+}

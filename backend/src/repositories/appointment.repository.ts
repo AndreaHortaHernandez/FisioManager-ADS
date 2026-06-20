@@ -53,8 +53,19 @@ export const appointmentRepository = {
     return prisma.appointment.findUnique({ where: { id }, include });
   },
 
-  create(data: { patientId: string; therapistId: string; dateTime: Date; roomId?: string; treatmentPlanId?: string; notes?: string }) {
+  create(data: { patientId: string; therapistId: string; dateTime: Date; roomId?: string; treatmentPlanId?: string; notes?: string; recurrenceGroupId?: string }) {
     return prisma.appointment.create({ data, include });
+  },
+
+  findByGroup(recurrenceGroupId: string) {
+    return prisma.appointment.findMany({ where: { recurrenceGroupId }, include, orderBy: { dateTime: 'asc' } });
+  },
+
+  cancelFutureInGroup(recurrenceGroupId: string, from: Date) {
+    return prisma.appointment.updateMany({
+      where: { recurrenceGroupId, status: { not: 'CANCELLED' }, dateTime: { gte: from } },
+      data: { status: 'CANCELLED' },
+    });
   },
 
   update(id: string, data: { dateTime?: Date; status?: string; roomId?: string | null; treatmentPlanId?: string | null; notes?: string }) {

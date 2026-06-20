@@ -1,11 +1,21 @@
 import { Request, Response } from 'express';
+import path from 'path';
 import { authService } from '../services/auth.service';
+import { auditService } from '../services/audit.service';
+import { storage } from '../lib/storage';
 import { catchAsync } from '../utils/catchAsync';
 import { ok } from '../utils/response';
 import { AppError } from '../errors/AppError';
 
 export const login = catchAsync(async (req: Request, res: Response) => {
   const result = await authService.login(req.body.email, req.body.password);
+  auditService.log({
+    userId: result.user.id,
+    action: 'LOGIN',
+    entity: 'User',
+    entityId: result.user.id,
+    ip: req.ip,
+  });
   ok(res, result);
 });
 
@@ -52,7 +62,8 @@ export const updateProfile = catchAsync(async (req: Request, res: Response) => {
 
 export const uploadAvatar = catchAsync(async (req: Request, res: Response) => {
   if (!req.file) throw new AppError('No se recibió ningún archivo de imagen', 400);
-  const avatarUrl = `/uploads/${req.file.filename}`;
+  const filename = `avatar-${Date.now()}${path.extname(req.file.originalname)}`;
+  const avatarUrl = await storage.save(req.file.buffer, filename, req.file.mimetype);
   const result = await authService.updateProfile(req.user!.id, { avatarUrl });
   ok(res, result);
 });

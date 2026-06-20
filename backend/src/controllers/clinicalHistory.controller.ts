@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { clinicalHistoryService } from '../services/clinicalHistory.service';
 import { progressService } from '../services/progress.service';
+import { auditService } from '../services/audit.service';
 import { catchAsync } from '../utils/catchAsync';
 import { ok, created } from '../utils/response';
 
@@ -11,6 +12,13 @@ export const getPatientProgress = catchAsync(async (req: Request, res: Response)
 
 export const getHistory = catchAsync(async (req: Request, res: Response) => {
   const history = await clinicalHistoryService.getByPatient(req.params.id);
+  auditService.log({
+    userId: req.user!.id,
+    action: 'VIEW_CLINICAL_HISTORY',
+    entity: 'ClinicalHistory',
+    entityId: req.params.id,
+    ip: req.ip,
+  });
   ok(res, history);
 });
 

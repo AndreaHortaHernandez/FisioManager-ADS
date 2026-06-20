@@ -4,6 +4,9 @@ FROM node:22-bookworm-slim
 
 WORKDIR /app
 
+# HOME=/app: que la caché de Whisper quede bajo /app (accesible al usuario no-root).
+ENV HOME=/app
+
 # Dependencias del sistema: python3, pip, ffmpeg (para Whisper) y openssl (Prisma).
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -32,6 +35,10 @@ RUN npx prisma generate \
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Endurecimiento: ejecutar como usuario no-root (uid 1000 "node" ya existe en la imagen).
+RUN mkdir -p /app/uploads && chown -R node:node /app
+USER node
 
 EXPOSE 3001
 ENTRYPOINT ["docker-entrypoint.sh"]

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
@@ -8,14 +9,15 @@ import { ClipboardCheck } from 'lucide-react';
 
 type Phase = 'idle' | 'inhale' | 'hold-in' | 'exhale' | 'hold-out';
 
-const PHASES: { key: Phase; label: string; duration: number; color: string }[] = [
-  { key: 'inhale',   label: 'Inhala',  duration: 4, color: 'text-primary' },
-  { key: 'hold-in',  label: 'Sostén',  duration: 4, color: 'text-secondary' },
-  { key: 'exhale',   label: 'Exhala',  duration: 4, color: 'text-tertiary' },
-  { key: 'hold-out', label: 'Sostén',  duration: 4, color: 'text-on-surface-variant' },
+const PHASES: { key: Phase; labelKey: string; duration: number; color: string }[] = [
+  { key: 'inhale',   labelKey: 'patient.wellness.inhale',  duration: 4, color: 'text-primary' },
+  { key: 'hold-in',  labelKey: 'patient.wellness.hold',  duration: 4, color: 'text-secondary' },
+  { key: 'exhale',   labelKey: 'patient.wellness.exhale',  duration: 4, color: 'text-tertiary' },
+  { key: 'hold-out', labelKey: 'patient.wellness.hold',  duration: 4, color: 'text-on-surface-variant' },
 ];
 
 export function WellnessView() {
+  const { t } = useTranslation();
   const navigate  = useNavigate();
   const templates = useStore(state => state.activityTemplates);
   const breathing = templates.filter(t => t.type === 'BREATHING');
@@ -61,11 +63,10 @@ export function WellnessView() {
   return (
     <div className="space-y-8 animate-fade-in">
       <header>
-        <h1 className="text-3xl font-display font-bold text-on-surface mb-1">Centro de Bienestar</h1>
-        <p className="text-on-surface-variant font-body text-sm">Ejercicios de respiración y relajación.</p>
+        <h1 className="text-3xl font-display font-bold text-on-surface mb-1">{t('patient.wellness.title')}</h1>
+        <p className="text-on-surface-variant font-body text-sm">{t('patient.wellness.subtitle')}</p>
       </header>
 
-      {}
       <Card
         level={2}
         className="flex items-center gap-4 border-ghost cursor-pointer hover:bg-surface-container transition-colors"
@@ -75,23 +76,20 @@ export function WellnessView() {
           <ClipboardCheck size={22} />
         </div>
         <div className="flex-1">
-          <p className="font-bold text-on-surface">Check-in de Bienestar</p>
-          <p className="text-xs text-on-surface-variant">Registra cómo te sientes hoy — estado emocional y diario.</p>
+          <p className="font-bold text-on-surface">{t('patient.wellness.checkinCard')}</p>
+          <p className="text-xs text-on-surface-variant">{t('patient.wellness.checkinCardDesc')}</p>
         </div>
         <span className="text-on-surface-variant text-lg">›</span>
       </Card>
 
-      {}
       <Card className="flex flex-col items-center py-8 gap-6 border-ghost relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
 
         <div className="relative flex items-center justify-center w-40 h-40">
-          {}
           <div className={cn(
             'absolute rounded-full border-2 border-primary/20 transition-all duration-1000',
             isExpanded ? 'w-40 h-40 opacity-100' : 'w-24 h-24 opacity-0'
           )} />
-          {}
           <div className={cn(
             'rounded-full flex items-center justify-center transition-all duration-1000 shadow-ambient',
             isExpanded
@@ -112,16 +110,15 @@ export function WellnessView() {
           <p className={cn('text-xl font-display font-bold transition-colors duration-500',
             running ? current.color : 'text-on-surface-variant'
           )}>
-            {running ? current.label : 'Respiración de Caja'}
+            {running ? t(current.labelKey) : t('patient.wellness.boxBreathing')}
           </p>
           {running && (
             <p className="text-sm text-on-surface-variant mt-1">
-              Ciclo {cycles + 1} · {current.label} {timeLeft}s
+              {t('patient.wellness.cycleStatus', { cycle: cycles + 1, phase: t(current.labelKey), seconds: timeLeft })}
             </p>
           )}
         </div>
 
-        {}
         {running && (
           <div className="flex gap-2">
             {PHASES.map((p, i) => (
@@ -134,21 +131,20 @@ export function WellnessView() {
         )}
 
         <Button onClick={running ? stop : start} className="px-8">
-          {running ? 'Detener' : 'Iniciar Respiración'}
+          {running ? t('patient.wellness.stop') : t('patient.wellness.startBreathing')}
         </Button>
 
         {!running && (
           <p className="text-xs text-on-surface-variant text-center px-8">
-            Inhala 4s · Sostén 4s · Exhala 4s · Sostén 4s
+            {t('patient.wellness.breathingPattern')}
           </p>
         )}
       </Card>
 
-      {}
       {breathing.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">
-            Ejercicios de Respiración
+            {t('patient.wellness.breathingExercises')}
           </h2>
           {breathing.map(t => (
             <Card key={t.id} level={2} className="flex items-start gap-4 border-ghost">
@@ -164,18 +160,17 @@ export function WellnessView() {
         </section>
       )}
 
-      {}
       <section className="space-y-3">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Consejos</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">{t('patient.wellness.tips')}</h2>
         {[
-          { icon: '💧', tip: 'Mantente bien hidratado antes y después de cada sesión.' },
-          { icon: '🛏️', tip: 'Descansa adecuadamente. La recuperación ocurre durante el sueño.' },
-          { icon: '🔥', tip: 'Calienta suavemente antes de iniciar ejercicios de alta intensidad.' },
-          { icon: '📅', tip: 'La constancia es clave — pequeñas sesiones diarias superan a las esporádicas.' },
-        ].map(({ icon, tip }) => (
-          <Card key={tip} level={2} className="flex items-start gap-3 border-ghost py-3">
+          { icon: '💧', tipKey: 'patient.wellness.tipHydration' },
+          { icon: '🛏️', tipKey: 'patient.wellness.tipRest' },
+          { icon: '🔥', tipKey: 'patient.wellness.tipWarmup' },
+          { icon: '📅', tipKey: 'patient.wellness.tipConsistency' },
+        ].map(({ icon, tipKey }) => (
+          <Card key={tipKey} level={2} className="flex items-start gap-3 border-ghost py-3">
             <span className="text-xl">{icon}</span>
-            <p className="text-sm text-on-surface-variant">{tip}</p>
+            <p className="text-sm text-on-surface-variant">{t(tipKey)}</p>
           </Card>
         ))}
       </section>

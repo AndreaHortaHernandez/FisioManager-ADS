@@ -1,20 +1,24 @@
 
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { Home, Activity, Heart, User, Settings, LogOut } from 'lucide-react';
+import { Home, Activity, Heart, User, Settings, LogOut, MessageSquare, CalendarPlus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../utils/cn';
 import { useStore } from '../../store/useStore';
+import { NotificationBell } from '../NotificationBell';
+import { ThemeToggle } from '../ThemeToggle';
 
 export function PatientLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const logout = useStore((s) => s.logout);
+  const { t } = useTranslation();
 
   const navItems = [
-    { label: 'Home', path: '/patient', icon: Home },
-    { label: 'Routines', path: '/patient/routines', icon: Activity },
-    { label: 'Wellness', path: '/patient/wellness', icon: Heart },
-    { label: 'Profile', path: '/patient/progress', icon: User },
-    { label: 'Settings', path: '/patient/settings', icon: Settings },
+    { label: t('nav.home'), path: '/patient', icon: Home },
+    { label: t('nav.routines'), path: '/patient/routines', icon: Activity },
+    { label: t('nav.wellness'), path: '/patient/wellness', icon: Heart },
+    { label: t('nav.profile'), path: '/patient/progress', icon: User },
+    { label: t('nav.settings'), path: '/patient/settings', icon: Settings },
   ];
 
   return (
@@ -24,7 +28,27 @@ export function PatientLayout() {
       <div className="absolute top-[50px] right-[-50px] w-48 h-48 bg-secondary-fixed-dim rounded-full mix-blend-multiply filter blur-3xl opacity-20 pointer-events-none" />
 
       {}
-      <main className="flex-1 overflow-y-auto pb-24 relative z-10 p-6 space-y-8">
+      <header className="relative z-20 flex justify-end items-center gap-1 px-6 pt-4">
+        <button
+          onClick={() => navigate('/patient/book')}
+          aria-label="Agendar cita"
+          className="p-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors"
+        >
+          <CalendarPlus size={22} />
+        </button>
+        <button
+          onClick={() => navigate('/patient/messages')}
+          aria-label="Mensajes"
+          className="p-2 rounded-full text-on-surface-variant hover:bg-surface-container transition-colors"
+        >
+          <MessageSquare size={22} />
+        </button>
+        <ThemeToggle />
+        <NotificationBell fullViewPath="/patient/notifications" align="right" />
+      </header>
+
+      {}
+      <main className="flex-1 overflow-y-auto pb-24 relative z-10 px-6 pb-6 space-y-8">
         <Outlet />
       </main>
 

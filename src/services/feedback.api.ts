@@ -1,5 +1,6 @@
 import { api } from './api';
 import type { Feedback } from '../types';
+import type { PainPointInput } from './metrics.api';
 
 interface CreateFeedbackPayload {
   routineId?:     string;
@@ -8,6 +9,7 @@ interface CreateFeedbackPayload {
   audioRecordUrl?: string;
   transcript?:    string;
   aiSummary?:     string;
+  painPoints?:    PainPointInput[];
 }
 
 export const feedbackApi = {

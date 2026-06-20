@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -7,17 +8,18 @@ import { ArrowLeft, Activity, CheckCircle2, PlayCircle, Mic, Sparkles, AlertTria
 import type { Feedback } from '../../types';
 import { ClinicalHistorySection } from '../../components/ClinicalHistorySection';
 import { TreatmentPlanSection } from '../../components/TreatmentPlanSection';
+import { OutcomeMeasuresPanel } from '../../components/OutcomeMeasuresPanel';
 import { reportApi } from '../../services/report.api';
 import { resolveUploadUrl } from '../../utils/url';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
 
-const EMOTION_MAP: Record<Feedback['emotionalState'], { emoji: string; label: string }> = {
-  GREAT:    { emoji: '😄', label: 'Excelente' },
-  GOOD:     { emoji: '🙂', label: 'Bien' },
-  OK:       { emoji: '😐', label: 'Regular' },
-  BAD:      { emoji: '😟', label: 'Mal' },
-  TERRIBLE: { emoji: '😣', label: 'Terrible' },
+const EMOTION_MAP: Record<Feedback['emotionalState'], { emoji: string; labelKey: string }> = {
+  GREAT:    { emoji: '😄', labelKey: 'therapist.patientDetail.emotion.great' },
+  GOOD:     { emoji: '🙂', labelKey: 'therapist.patientDetail.emotion.good' },
+  OK:       { emoji: '😐', labelKey: 'therapist.patientDetail.emotion.ok' },
+  BAD:      { emoji: '😟', labelKey: 'therapist.patientDetail.emotion.bad' },
+  TERRIBLE: { emoji: '😣', labelKey: 'therapist.patientDetail.emotion.terrible' },
 };
 
 function PainBar({ value }: { value: number }) {
@@ -36,6 +38,7 @@ function PainBar({ value }: { value: number }) {
 }
 
 export function PatientDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [mainTab, setMainTab] = useState<'resumen' | 'clinico' | 'plan'>('resumen');
@@ -82,25 +85,24 @@ export function PatientDetail() {
   if (!patient) {
     return (
       <div className="flex flex-col items-center justify-center p-12">
-        <p className="text-on-surface-variant mb-4">Paciente no encontrado.</p>
-        <Button onClick={() => navigate('/therapist/patients')}>Volver</Button>
+        <p className="text-on-surface-variant mb-4">{t('therapist.patientDetail.notFound')}</p>
+        <Button onClick={() => navigate('/therapist/patients')}>{t('therapist.patientDetail.back')}</Button>
       </div>
     );
   }
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {}
       <div>
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={() => navigate('/therapist/patients')}
             className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-primary transition-colors"
           >
-            <ArrowLeft size={16} /> Todos los pacientes
+            <ArrowLeft size={16} /> {t('therapist.patientDetail.allPatients')}
           </button>
           <Button onClick={handleDownloadReport} disabled={downloading} className="flex items-center gap-2 py-2 px-3 text-sm">
-            <FileDown size={16} /> {downloading ? 'Generando…' : 'Descargar reporte PDF'}
+            <FileDown size={16} /> {downloading ? t('therapist.patientDetail.generating') : t('therapist.patientDetail.downloadReport')}
           </Button>
         </div>
 
@@ -116,17 +118,17 @@ export function PatientDetail() {
             <div className="flex gap-4 mt-3">
               <div className="text-center">
                 <p className="text-xl font-display font-bold text-primary">{routines.length}</p>
-                <p className="text-xs text-on-surface-variant uppercase tracking-wide font-bold">Rutinas</p>
+                <p className="text-xs text-on-surface-variant uppercase tracking-wide font-bold">{t('therapist.patientDetail.routines')}</p>
               </div>
               <div className="text-center">
                 <p className="text-xl font-display font-bold text-secondary">{completedRoutines.length}</p>
-                <p className="text-xs text-on-surface-variant uppercase tracking-wide font-bold">Completadas</p>
+                <p className="text-xs text-on-surface-variant uppercase tracking-wide font-bold">{t('therapist.patientDetail.completed')}</p>
               </div>
               <div className="text-center">
                 <p className={`text-xl font-display font-bold ${avgPain && avgPain >= 7 ? 'text-error' : 'text-tertiary'}`}>
                   {avgPain ?? '—'}
                 </p>
-                <p className="text-xs text-on-surface-variant uppercase tracking-wide font-bold">Dolor Prom.</p>
+                <p className="text-xs text-on-surface-variant uppercase tracking-wide font-bold">{t('therapist.patientDetail.avgPain')}</p>
               </div>
             </div>
           </div>
@@ -139,17 +141,16 @@ export function PatientDetail() {
           <div>
             <p className="font-bold text-sm text-error">
               {recurringHighPain
-                ? `Dolor elevado recurrente — ${highPainCount} de los últimos ${last5.length} reportes ≥ 7`
-                : `Último reporte con dolor elevado — ${feedbacks[0].painLevel}/10`}
+                ? t('therapist.patientDetail.alert.recurring', { count: highPainCount, total: last5.length })
+                : t('therapist.patientDetail.alert.latest', { value: feedbacks[0].painLevel })}
             </p>
             <p className="text-xs text-on-surface-variant mt-0.5">
-              Se recomienda revisar el plan de tratamiento o contactar al paciente.
+              {t('therapist.patientDetail.alert.recommendation')}
             </p>
           </div>
         </div>
       )}
 
-      {}
       <div className="flex gap-1 bg-surface-container-low rounded-2xl p-1 w-fit">
         <button
           onClick={() => setMainTab('resumen')}
@@ -157,7 +158,7 @@ export function PatientDetail() {
             mainTab === 'resumen' ? 'bg-primary text-white shadow-ambient' : 'text-on-surface-variant hover:bg-surface-variant'
           }`}
         >
-          <LayoutDashboard size={15} /> Resumen
+          <LayoutDashboard size={15} /> {t('therapist.patientDetail.tab.summary')}
         </button>
         <button
           onClick={() => setMainTab('clinico')}
@@ -165,7 +166,7 @@ export function PatientDetail() {
             mainTab === 'clinico' ? 'bg-primary text-white shadow-ambient' : 'text-on-surface-variant hover:bg-surface-variant'
           }`}
         >
-          <ClipboardList size={15} /> Historial Clínico
+          <ClipboardList size={15} /> {t('therapist.patientDetail.tab.clinical')}
         </button>
         <button
           onClick={() => setMainTab('plan')}
@@ -173,22 +174,26 @@ export function PatientDetail() {
             mainTab === 'plan' ? 'bg-primary text-white shadow-ambient' : 'text-on-surface-variant hover:bg-surface-variant'
           }`}
         >
-          <ClipboardList size={15} /> Plan de Tratamiento
+          <ClipboardList size={15} /> {t('therapist.patientDetail.tab.plan')}
         </button>
       </div>
 
-      {mainTab === 'clinico' && <ClinicalHistorySection patientId={id!} />}
+      {mainTab === 'clinico' && (
+        <div className="space-y-4">
+          <ClinicalHistorySection patientId={id!} />
+          <OutcomeMeasuresPanel patientId={id!} />
+        </div>
+      )}
       {mainTab === 'plan' && <TreatmentPlanSection patientId={id!} />}
 
       {mainTab === 'resumen' && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {}
         <div className="space-y-4">
-          <h2 className="text-lg font-display font-bold">Rutinas Asignadas</h2>
+          <h2 className="text-lg font-display font-bold">{t('therapist.patientDetail.assignedRoutines')}</h2>
 
           {activeRoutines.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-primary">Activas</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-primary">{t('therapist.patientDetail.active')}</p>
               {activeRoutines.map(r => (
                 <Card key={r.id} level={2} className="flex items-center gap-3 border-ghost py-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
@@ -196,7 +201,7 @@ export function PatientDetail() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm text-on-surface truncate">{r.title}</p>
-                    <p className="text-xs text-on-surface-variant">{r.activities.length} actividades</p>
+                    <p className="text-xs text-on-surface-variant">{t('therapist.patientDetail.activitiesCount', { count: r.activities.length })}</p>
                   </div>
                   <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
                     {r.type}
@@ -208,7 +213,7 @@ export function PatientDetail() {
 
           {completedRoutines.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">Completadas</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">{t('therapist.patientDetail.completed')}</p>
               {completedRoutines.slice(0, 5).map(r => (
                 <Card key={r.id} level={2} className="flex items-center gap-3 border-ghost py-3 opacity-60">
                   <div className="w-8 h-8 rounded-lg bg-secondary/10 text-secondary flex items-center justify-center">
@@ -216,7 +221,7 @@ export function PatientDetail() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-sm text-on-surface truncate">{r.title}</p>
-                    <p className="text-xs text-on-surface-variant">{r.activities.length} actividades</p>
+                    <p className="text-xs text-on-surface-variant">{t('therapist.patientDetail.activitiesCount', { count: r.activities.length })}</p>
                   </div>
                 </Card>
               ))}
@@ -226,19 +231,18 @@ export function PatientDetail() {
           {routines.length === 0 && (
             <Card level={2} className="py-8 text-center border-ghost">
               <Activity size={32} className="text-outline-variant mx-auto mb-2" />
-              <p className="text-sm text-on-surface-variant">Sin rutinas asignadas.</p>
+              <p className="text-sm text-on-surface-variant">{t('therapist.patientDetail.noRoutines')}</p>
             </Card>
           )}
         </div>
 
-        {}
         <div className="space-y-4">
-          <h2 className="text-lg font-display font-bold">Historial de Feedback</h2>
+          <h2 className="text-lg font-display font-bold">{t('therapist.patientDetail.feedbackHistory')}</h2>
 
           {lastFeedbacks.length > 0 && (
             <Card className="space-y-2 border-ghost">
               <p className="text-xs text-on-surface-variant font-bold uppercase tracking-wide mb-2">
-                Tendencia de Dolor
+                {t('therapist.patientDetail.painTrend')}
               </p>
               <div className="flex items-end gap-1 h-12">
                 {lastFeedbacks.map(f => <PainBar key={f.id} value={f.painLevel} />)}
@@ -248,7 +252,7 @@ export function PatientDetail() {
 
           {feedbacks.length === 0 ? (
             <Card level={2} className="py-8 text-center border-ghost">
-              <p className="text-sm text-on-surface-variant">Sin feedback registrado.</p>
+              <p className="text-sm text-on-surface-variant">{t('therapist.patientDetail.noFeedback')}</p>
             </Card>
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -259,7 +263,7 @@ export function PatientDetail() {
                     <div className="flex items-center gap-3">
                       <span className="text-2xl">{emo.emoji}</span>
                       <div className="flex-1">
-                        <p className="font-bold text-sm">{emo.label}</p>
+                        <p className="font-bold text-sm">{t(emo.labelKey)}</p>
                         <p className="text-xs text-on-surface-variant">{formatDate(fb.date)}</p>
                       </div>
                       <p className={`text-lg font-display font-bold ${fb.painLevel >= 8 ? 'text-error' : fb.painLevel >= 5 ? 'text-tertiary' : 'text-secondary'}`}>
@@ -269,14 +273,14 @@ export function PatientDetail() {
                     {fb.audioRecordUrl && (
                       <div className="space-y-1.5">
                         <p className="flex items-center gap-1.5 text-xs font-bold text-on-surface-variant">
-                          <Mic size={12} /> Nota de voz
+                          <Mic size={12} /> {t('therapist.patientDetail.voiceNote')}
                         </p>
                         <audio controls src={`${BACKEND_URL}${fb.audioRecordUrl}`} className="w-full h-8" />
                       </div>
                     )}
                     {fb.transcript && (
                       <div className="bg-surface-container rounded-xl p-3">
-                        <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wide mb-1">Transcript</p>
+                        <p className="text-xs font-bold text-on-surface-variant uppercase tracking-wide mb-1">{t('therapist.patientDetail.transcript')}</p>
                         <p className="text-xs text-on-surface leading-relaxed">{fb.transcript}</p>
                       </div>
                     )}
@@ -284,7 +288,7 @@ export function PatientDetail() {
                       <div className="bg-primary/8 rounded-xl p-3 flex gap-2">
                         <Sparkles size={14} className="text-primary shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-xs font-bold text-primary uppercase tracking-wide mb-1">Resumen clínico IA</p>
+                          <p className="text-xs font-bold text-primary uppercase tracking-wide mb-1">{t('therapist.patientDetail.aiSummary')}</p>
                           <p className="text-xs text-on-surface leading-relaxed">{fb.aiSummary}</p>
                         </div>
                       </div>

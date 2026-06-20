@@ -34,6 +34,19 @@ interface HistoryInput {
   background?: string;
 }
 
+export interface ClinicalDocument {
+  id: string;
+  patientId: string;
+  uploaderId: string;
+  fileName: string;
+  fileUrl: string;
+  mimeType: string;
+  sizeBytes: number;
+  category: string;
+  isVisible: boolean;
+  createdAt: string;
+}
+
 export const clinicalHistoryApi = {
   get: (patientId: string) =>
     api.get<ClinicalHistory | null>(`/pacientes/${patientId}/historial`),
@@ -52,4 +65,18 @@ export const clinicalHistoryApi = {
 
   updateNoteVisibility: (id: string, isVisible: boolean) =>
     api.patch<ClinicalNote>(`/notas/${id}/visibilidad`, { isVisible }),
+
+  listDocuments: (patientId: string) =>
+    api.get<ClinicalDocument[]>(`/pacientes/${patientId}/documentos`),
+
+  uploadDocument: (patientId: string, file: File, category: string, isVisible: boolean) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('category', category);
+    fd.append('isVisible', String(isVisible));
+    return api.postForm<ClinicalDocument>(`/pacientes/${patientId}/documentos`, fd);
+  },
+
+  deleteDocument: (id: string) =>
+    api.delete<{ message: string }>(`/documentos/${id}`),
 };

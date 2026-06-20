@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { PlayCircle, CheckCircle2, Calendar } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 export function PatientRoutines() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const currentUserId = useStore(state => state.currentUser);
   const allRoutines = useStore(state => state.routines);
@@ -50,7 +52,7 @@ export function PatientRoutines() {
           </span>
           <h3 className="font-display font-bold text-on-surface">{routine.title}</h3>
           <p className="text-xs text-on-surface-variant mt-0.5">
-            {routine.activities.length} actividades
+            {t('patient.routines.activitiesCount', { count: routine.activities.length })}
             {routine.assignedDate && (
               <span className="ml-2 inline-flex items-center gap-1">
                 <Calendar size={10} /> {formatDate(routine.assignedDate)}
@@ -70,22 +72,22 @@ export function PatientRoutines() {
   return (
     <div className="space-y-8 animate-fade-in">
       <header>
-        <h1 className="text-3xl font-display font-bold text-on-surface mb-1">Mis Rutinas</h1>
+        <h1 className="text-3xl font-display font-bold text-on-surface mb-1">{t('patient.routines.title')}</h1>
         <p className="text-on-surface-variant font-body text-sm">
-          {active.length} activa{active.length !== 1 ? 's' : ''} · {completed.length} completada{completed.length !== 1 ? 's' : ''}
+          {t('patient.routines.activeCount', { count: active.length })} · {t('patient.routines.completedCount', { count: completed.length })}
         </p>
       </header>
 
       {active.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-primary">Pendientes</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-primary">{t('patient.routines.pending')}</h2>
           {active.map(r => <RoutineCard key={r.id} routine={r} />)}
         </section>
       )}
 
       {completed.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Completadas</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">{t('patient.routines.completed')}</h2>
           {completed.map(r => <RoutineCard key={r.id} routine={r} />)}
         </section>
       )}
@@ -93,8 +95,8 @@ export function PatientRoutines() {
       {routines.length === 0 && (
         <Card level={2} className="flex flex-col items-center py-16 text-center border-ghost">
           <PlayCircle size={48} className="text-outline-variant mb-4" />
-          <p className="font-display font-bold text-on-surface">Sin rutinas asignadas</p>
-          <p className="text-sm text-on-surface-variant mt-1">Tu terapeuta te asignará rutinas pronto.</p>
+          <p className="font-display font-bold text-on-surface">{t('patient.routines.emptyTitle')}</p>
+          <p className="text-sm text-on-surface-variant mt-1">{t('patient.routines.emptyDesc')}</p>
         </Card>
       )}
     </div>

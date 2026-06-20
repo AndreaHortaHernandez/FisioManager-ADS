@@ -12,13 +12,18 @@ import { meRouter } from './me.routes';
 import { usuariosRouter } from './usuarios.routes';
 import { asignacionesRouter } from './asignaciones.routes';
 import {
-  pacientesRouter, historialRouter, diagnosticosRouter, notasRouter, ownHistoryRouter,
+  pacientesRouter, historialRouter, diagnosticosRouter, notasRouter, ownHistoryRouter, documentosRouter,
 } from './clinicalHistory.routes';
 import { availabilityRouter } from './availability.routes';
 import { patientPlansRouter, plansRouter, phasesRouter } from './treatmentPlan.routes';
 import { roomRouter } from './room.routes';
 import { notificationPreferenceRouter } from './notificationPreference.routes';
 import { analyticsRouter } from './analytics.routes';
+import { auditRouter } from './audit.routes';
+import { notificationRouter } from './notification.routes';
+import { chatRouter } from './chat.routes';
+import { waitlistRouter } from './waitlist.routes';
+import { outcomeMeasureRouter, painPointRouter } from './metrics.routes';
 
 const router = Router();
 
@@ -32,10 +37,16 @@ router.use('/appointments', appointmentRouter);
 router.use('/admin', adminRouter);
 router.use('/admin/salas', roomRouter);
 router.use('/admin/analytics', analyticsRouter);
+router.use('/audit', auditRouter);
 router.use('/sesiones', sessionRouter);
 router.use('/me', meRouter);
 router.use('/me/historial', ownHistoryRouter);
 router.use('/notificaciones', notificationPreferenceRouter);
+router.use('/notifications', notificationRouter);
+router.use('/conversations', chatRouter);
+router.use('/waitlist', waitlistRouter);
+router.use('/outcome-measures', outcomeMeasureRouter);
+router.use('/pain-points', painPointRouter);
 router.use('/usuarios', usuariosRouter);
 router.use('/asignaciones', asignacionesRouter);
 router.use('/citas', appointmentRouter);
@@ -44,6 +55,7 @@ router.use('/pacientes', patientPlansRouter);
 router.use('/historial', historialRouter);
 router.use('/diagnosticos', diagnosticosRouter);
 router.use('/notas', notasRouter);
+router.use('/documentos', documentosRouter);
 router.use('/disponibilidad', availabilityRouter);
 router.use('/planes', plansRouter);
 router.use('/fases', phasesRouter);

@@ -1,15 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, User, Mail, Phone, ToggleLeft, ToggleRight, Trash2, Pencil } from 'lucide-react';
 import { adminApi, type UserRow } from '../../services/admin.api';
 import type { Therapist } from '../../types';
 import { AvatarUploadField } from '../../components/AvatarUploadField';
 import { resolveUploadUrl } from '../../utils/url';
-
-const roleLabel: Record<UserRow['role'], string> = {
-  PATIENT: 'Paciente',
-  THERAPIST: 'Terapeuta',
-  ADMIN: 'Admin',
-};
 
 const emptyForm = {
   role: 'PATIENT' as 'PATIENT' | 'THERAPIST',
@@ -25,6 +20,7 @@ const emptyEditForm = {
 };
 
 export function AdminUsers() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [showForm, setShowForm] = useState(false);
@@ -70,7 +66,7 @@ export function AdminUsers() {
         });
       }
       setShowForm(false);
-      setSuccess(`${roleLabel[form.role]} ${form.name} registrado correctamente.`);
+      setSuccess(t('admin.users.registeredSuccess', { role: t(`admin.users.role.${form.role}`), name: form.name }));
       reload();
     } catch (e: unknown) {
       setError((e as Error).message);
@@ -132,7 +128,7 @@ export function AdminUsers() {
 
   async function handleDeletePermanently(u: UserRow) {
     const confirmed = window.confirm(
-      `¿Eliminar permanentemente a ${u.name} y todos sus datos asociados? Esta acción no se puede deshacer.`,
+      t('admin.users.deleteConfirm', { name: u.name }),
     );
     if (!confirmed) return;
     try {
@@ -150,12 +146,12 @@ export function AdminUsers() {
     <div>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold">Usuarios</h1>
-          <p className="text-on-surface-variant">Alta y administración de cuentas</p>
+          <h1 className="text-3xl font-display font-bold">{t('admin.users.title')}</h1>
+          <p className="text-on-surface-variant">{t('admin.users.subtitle')}</p>
         </div>
         <button onClick={openForm}
           className="flex items-center gap-2 bg-primary text-on-primary px-4 py-2.5 rounded-xl font-medium hover:opacity-90 transition-opacity">
-          <Plus size={18} /> Nuevo usuario
+          <Plus size={18} /> {t('admin.users.new')}
         </button>
       </div>
 
@@ -166,22 +162,22 @@ export function AdminUsers() {
       {showForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-display font-bold mb-4">Nuevo usuario</h2>
+            <h2 className="text-xl font-display font-bold mb-4">{t('admin.users.newTitle')}</h2>
             <form onSubmit={handleSubmit} className="space-y-3">
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Tipo de usuario</label>
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.userType')}</label>
                 <select value={form.role} onChange={f('role')}
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm">
-                  <option value="PATIENT">Paciente</option>
-                  <option value="THERAPIST">Terapeuta</option>
+                  <option value="PATIENT">{t('admin.users.role.PATIENT')}</option>
+                  <option value="THERAPIST">{t('admin.users.role.THERAPIST')}</option>
                 </select>
               </div>
 
               {[
-                { label: 'Nombre completo', key: 'name', type: 'text', required: true },
-                { label: 'Correo electrónico', key: 'email', type: 'email', required: true },
-                { label: 'Contraseña inicial', key: 'password', type: 'password', required: true },
-                { label: 'Teléfono', key: 'phone', type: 'tel', required: false },
+                { label: t('admin.users.fullName'), key: 'name', type: 'text', required: true },
+                { label: t('admin.users.email'), key: 'email', type: 'email', required: true },
+                { label: t('admin.users.initialPassword'), key: 'password', type: 'password', required: true },
+                { label: t('admin.users.phone'), key: 'phone', type: 'tel', required: false },
               ].map(({ label, key, type, required }) => (
                 <div key={key}>
                   <label className="text-sm text-on-surface-variant mb-1 block">{label}</label>
@@ -194,33 +190,33 @@ export function AdminUsers() {
               {form.role === 'PATIENT' ? (
                 <>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Edad</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.age')}</label>
                     <input required type="number" value={form.age} onChange={f('age')}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
                   </div>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Padecimiento / Diagnóstico</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.condition')}</label>
                     <input required type="text" value={form.condition} onChange={f('condition')}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
                   </div>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Terapeuta asignado</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.assignedTherapist')}</label>
                     <select required value={form.therapistId} onChange={f('therapistId')}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm">
-                      <option value="">Seleccionar...</option>
-                      {therapists.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      <option value="">{t('admin.users.select')}</option>
+                      {therapists.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}
                     </select>
                   </div>
                 </>
               ) : (
                 <>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Cédula</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.cedula')}</label>
                     <input type="text" value={form.cedula} onChange={f('cedula')}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
                   </div>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Especialidad</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.specialty')}</label>
                     <input type="text" value={form.especialidad} onChange={f('especialidad')}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
                   </div>
@@ -231,11 +227,11 @@ export function AdminUsers() {
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setShowForm(false)}
                   className="flex-1 py-2.5 rounded-xl border border-surface-container-high text-sm hover:bg-surface-container transition-colors">
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button type="submit"
                   className="flex-1 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition-opacity">
-                  Registrar
+                  {t('admin.users.registerAction')}
                 </button>
               </div>
             </form>
@@ -246,41 +242,41 @@ export function AdminUsers() {
       {editingUser && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-surface rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-display font-bold mb-4">Editar {roleLabel[editingUser.role]}</h2>
+            <h2 className="text-xl font-display font-bold mb-4">{t('admin.users.editTitle', { role: t(`admin.users.role.${editingUser.role}`) })}</h2>
             <form onSubmit={handleEditSubmit} className="space-y-3">
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Nombre completo</label>
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.fullName')}</label>
                 <input required type="text" value={editForm.name} onChange={ef('name')}
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
               </div>
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Teléfono</label>
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.phone')}</label>
                 <input type="tel" value={editForm.phone} onChange={ef('phone')}
                   className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
               </div>
               <div>
-                <label className="text-sm text-on-surface-variant mb-1 block">Foto de perfil</label>
+                <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.profilePhoto')}</label>
                 <AvatarUploadField avatarUrl={editingUser.avatarUrl} name={editingUser.name} onUpload={handleAvatarUpload} />
               </div>
 
               {editingUser.role === 'PATIENT' && (
                 <>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Edad</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.age')}</label>
                     <input type="number" value={editForm.age} onChange={ef('age')}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
                   </div>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Padecimiento / Diagnóstico</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.condition')}</label>
                     <input type="text" value={editForm.condition} onChange={ef('condition')}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
                   </div>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Terapeuta asignado</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.assignedTherapist')}</label>
                     <select value={editForm.therapistId} onChange={ef('therapistId')}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm">
-                      <option value="">Sin cambios</option>
-                      {therapists.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                      <option value="">{t('admin.users.noChanges')}</option>
+                      {therapists.map(th => <option key={th.id} value={th.id}>{th.name}</option>)}
                     </select>
                   </div>
                 </>
@@ -289,12 +285,12 @@ export function AdminUsers() {
               {editingUser.role === 'THERAPIST' && (
                 <>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Cédula</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.cedula')}</label>
                     <input type="text" value={editForm.cedula} onChange={ef('cedula')}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
                   </div>
                   <div>
-                    <label className="text-sm text-on-surface-variant mb-1 block">Especialidad</label>
+                    <label className="text-sm text-on-surface-variant mb-1 block">{t('admin.users.specialty')}</label>
                     <input type="text" value={editForm.especialidad} onChange={ef('especialidad')}
                       className="w-full bg-surface-container border border-surface-container-high rounded-xl px-3 py-2.5 text-sm" />
                   </div>
@@ -305,11 +301,11 @@ export function AdminUsers() {
               <div className="flex gap-3 pt-2">
                 <button type="button" onClick={() => setEditingUser(null)}
                   className="flex-1 py-2.5 rounded-xl border border-surface-container-high text-sm hover:bg-surface-container transition-colors">
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button type="submit"
                   className="flex-1 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition-opacity">
-                  Guardar cambios
+                  {t('admin.users.saveChanges')}
                 </button>
               </div>
             </form>
@@ -321,16 +317,16 @@ export function AdminUsers() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-surface-container-high">
-              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Usuario</th>
-              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Contacto</th>
-              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Rol</th>
-              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Estado</th>
-              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">Acciones</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">{t('admin.users.colUser')}</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">{t('admin.users.colContact')}</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">{t('admin.users.colRole')}</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">{t('admin.users.colStatus')}</th>
+              <th className="text-left p-4 text-sm text-on-surface-variant font-medium">{t('admin.users.colActions')}</th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 && (
-              <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">Sin usuarios registrados</td></tr>
+              <tr><td colSpan={5} className="p-8 text-center text-on-surface-variant">{t('admin.users.empty')}</td></tr>
             )}
             {users.map(u => (
               <tr key={u.id} className="border-b border-surface-container-high last:border-0 hover:bg-surface transition-colors">
@@ -347,17 +343,17 @@ export function AdminUsers() {
                   <p className="flex items-center gap-1 text-sm"><Mail size={12} className="text-on-surface-variant" /> {u.email}</p>
                   {u.phone && <p className="flex items-center gap-1 text-sm text-on-surface-variant"><Phone size={12} /> {u.phone}</p>}
                 </td>
-                <td className="p-4 text-sm">{roleLabel[u.role]}</td>
+                <td className="p-4 text-sm">{t(`admin.users.role.${u.role}`)}</td>
                 <td className="p-4">
                   {u.role === 'ADMIN' ? (
                     <span className="text-sm text-on-surface-variant">—</span>
                   ) : (
                     <button onClick={() => handleToggle(u)}
                       className="flex items-center gap-1.5 text-sm transition-colors"
-                      title={u.isActive ? 'Desactivar' : 'Activar'}>
+                      title={u.isActive ? t('admin.users.deactivate') : t('admin.users.activate')}>
                       {u.isActive
-                        ? <><ToggleRight size={22} className="text-primary" /><span className="text-primary font-medium">Activo</span></>
-                        : <><ToggleLeft size={22} className="text-on-surface-variant" /><span className="text-on-surface-variant">Inactivo</span></>
+                        ? <><ToggleRight size={22} className="text-primary" /><span className="text-primary font-medium">{t('admin.users.active')}</span></>
+                        : <><ToggleLeft size={22} className="text-on-surface-variant" /><span className="text-on-surface-variant">{t('admin.users.inactive')}</span></>
                       }
                     </button>
                   )}
@@ -365,13 +361,13 @@ export function AdminUsers() {
                 <td className="p-4">
                   <div className="flex items-center gap-3">
                     {u.role !== 'ADMIN' && (
-                      <button onClick={() => openEdit(u)} title="Editar"
+                      <button onClick={() => openEdit(u)} title={t('admin.users.edit')}
                         className="text-on-surface-variant hover:text-primary transition-colors">
                         <Pencil size={16} />
                       </button>
                     )}
                     {u.role !== 'ADMIN' && (
-                      <button onClick={() => handleDeletePermanently(u)} title="Eliminar permanentemente"
+                      <button onClick={() => handleDeletePermanently(u)} title={t('admin.users.deletePermanently')}
                         className="text-on-surface-variant hover:text-error transition-colors">
                         <Trash2 size={16} />
                       </button>

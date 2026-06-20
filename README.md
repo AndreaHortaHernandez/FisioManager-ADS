@@ -9,27 +9,42 @@ Permite a administradores, terapeutas y pacientes gestionar citas, rutinas de ej
 | Capa | Tecnologías |
 |---|---|
 | Frontend | React 19, TypeScript, Vite, Zustand, TailwindCSS v4, React Router v7 |
-| Backend | Node.js, Express 4, Prisma ORM, SQLite, JWT, Zod |
+| Backend | Node.js, Express 4, Prisma ORM, PostgreSQL, Socket.IO, JWT, Zod |
 | Email | Nodemailer (Ethereal para pruebas o SMTP real) |
 
 ## Estructura del proyecto
 
 ```
 fisiomanager/
-├── src/                  # Frontend (React + TypeScript)
-│   ├── components/       # Componentes reutilizables
-│   ├── pages/            # Vistas por rol (admin, therapist, patient)
-│   ├── services/         # Llamadas a la API
-│   ├── store/            # Estado global (Zustand)
-│   └── types/            # Tipos TypeScript
+├── src/                      # Frontend (React + TypeScript)
+│   ├── components/           # Componentes reutilizables (ui/, layout/, ChatView, BodyMap, ThemeToggle…)
+│   ├── pages/                # Vistas por rol: admin/ · therapist/ · patient/ · auth/ · shared/
+│   ├── services/             # Cliente API (*.api.ts), socket.io-client
+│   ├── store/                # Estado global (Zustand)
+│   ├── locales/              # Traducciones i18n (es.json, en.json)
+│   ├── lib/                  # theme.ts (modo claro/oscuro)
+│   ├── utils/                # Utilidades (cn, date, url)
+│   └── types/                # Tipos TypeScript
 ├── backend/
-│   ├── src/              # API REST (Express)
-│   │   ├── routes/
+│   ├── src/                  # API REST (Express) + Socket.IO
+│   │   ├── routes/           # Rutas (incluye comentarios @swagger → /api-docs)
 │   │   ├── controllers/
-│   │   ├── services/
-│   │   └── repositories/
-│   └── prisma/           # Schema y migraciones de BD
-└── public/
+│   │   ├── services/         # Lógica de negocio (chat, notificaciones, IA, storage…)
+│   │   ├── repositories/     # Acceso a datos (Prisma)
+│   │   ├── middlewares/      # auth, role, validate, upload, errores
+│   │   ├── schemas/          # Validación con Zod
+│   │   ├── config/           # Validación de entorno (env.ts)
+│   │   ├── lib/              # prisma, socket, storage, observability, logger
+│   │   ├── errors/ · utils/ · types/
+│   │   └── __tests__/        # Pruebas (Jest)
+│   ├── prisma/               # schema.prisma · migrations/ · seed.ts
+│   └── Dockerfile
+├── public/                   # Estáticos + iconos PWA
+├── .github/workflows/        # CI (lint · test · build · docker)
+├── docker-compose.yml        # Stack completo (postgres, backend, frontend, ollama, backups)
+├── docker-compose.prod.yml   # Override de producción (Caddy/HTTPS, Redis, MinIO)
+├── Caddyfile                 # Reverse-proxy con HTTPS automático
+└── nginx.conf                # Frontend nginx (reverse-proxy /api, /uploads, /socket.io)
 ```
 
 ## Instalación y uso
@@ -38,6 +53,8 @@ fisiomanager/
 
 - Node.js 18+
 - npm 9+
+- PostgreSQL 14+ (local) — o usa el contenedor del `docker-compose.yml`. Para desarrollo rápido:
+  `docker run -d --name fisio-pg -e POSTGRES_USER=fisio -e POSTGRES_PASSWORD=fisio -e POSTGRES_DB=fisiomanager -p 5432:5432 postgres:16-alpine`
 
 ### 1. Clonar el repositorio
 
@@ -72,28 +89,44 @@ cd backend && npm install
 
 ```bash
 cd backend
-npm run db:push   # Crea las tablas
-npm run db:seed   # Carga datos de prueba
+npx prisma generate       # Genera el cliente Prisma
+npm run db:migrate:deploy # Aplica las migraciones (crea las tablas)
+npm run db:seed           # Carga datos de prueba
 ```
 
-### 5. Iniciar los servidores
+### 5. Modo desarrollo
+
+Arranca backend y frontend con recarga rápida:
 
 ```bash
-# Desde la raíz — inicia backend y frontend juntos
+# Desde la raíz — inicia ambos en paralelo
 npm run dev:all
 ```
 
 O por separado:
 
 ```bash
-# Backend (puerto 3001)
-cd backend && npm run dev
-
-# Frontend (puerto 5173)
-npm run dev
+cd backend && npm run dev   # Backend (ts-node-dev) en :3001
+npm run dev                 # Frontend (Vite) en :5173
 ```
 
-Abre `http://localhost:5173` en tu navegador.
+Abre `http://localhost:5173`.
+
+### 6. Compilación / producción
+
+Genera los artefactos optimizados (TypeScript → JS, bundle del frontend con code-splitting):
+
+```bash
+# Frontend → carpeta dist/ (estáticos para servir con nginx)
+npm run build
+npm run preview             # Previsualiza el build de producción
+
+# Backend → backend/dist/
+cd backend && npm run build
+npm start                   # Ejecuta el backend compilado (node dist/server.js)
+```
+
+> Para levantar **todo el stack** (incluida la IA con Ollama/Whisper) con un solo comando, usa Docker — ver [DOCKER.md](./DOCKER.md).
 
 ## Cuentas de prueba
 
@@ -108,22 +141,32 @@ Abre `http://localhost:5173` en tu navegador.
 
 | Comando | Descripción |
 |---|---|
-| `npm run dev:all` | Inicia backend y frontend en paralelo |
+| `npm run dev:all` | Inicia backend y frontend en paralelo (desarrollo) |
 | `npm run dev` | Solo el frontend (Vite) |
-| `npm run build` | Build de producción del frontend |
-| `cd backend && npm run dev` | Solo el backend |
-| `cd backend && npm run db:push` | Aplica cambios del schema a la BD |
+| `npm run build` | Build de producción del frontend (code-splitting + PWA) |
+| `npm run preview` | Previsualiza el build de producción del frontend |
+| `npm run lint` | Linter del frontend |
+| `npm test` | Pruebas del frontend (Vitest) |
+| `cd backend && npm run dev` | Solo el backend (recarga en caliente) |
+| `cd backend && npm run build` | Compila el backend a `dist/` |
+| `cd backend && npm start` | Ejecuta el backend compilado |
+| `cd backend && npm test` | Pruebas del backend (Jest) |
+| `cd backend && npm run db:migrate` | Crea/aplica una migración en desarrollo |
+| `cd backend && npm run db:migrate:deploy` | Aplica migraciones pendientes (producción) |
 | `cd backend && npm run db:seed` | Recarga los datos de prueba |
 | `cd backend && npm run db:reset` | Resetea y re-semilla la BD completa |
 | `cd backend && npm run db:studio` | Abre Prisma Studio (explorador visual de BD) |
 
 ## Módulos implementados
 
-- **Autenticación** — Login con JWT, rutas protegidas por rol, logout
-- **Vista Paciente** — Home, RoutinePlayer, FeedbackView
-- **Vista Terapeuta** — Dashboard, RoutineLibrary, RoutineBuilder
-- **Vista Administrador** — Agenda del día, Citas (CRUD), Pacientes, Doctores, Asignaciones
-- **Email** — Recordatorios de citas vía Nodemailer
+- **Autenticación** — JWT con refresh tokens, rutas protegidas por rol, recuperación de contraseña
+- **Paciente** — Rutinas y reproductor, check-in de bienestar con mapa corporal de dolor, progreso, auto-agendamiento de citas y lista de espera
+- **Terapeuta** — Dashboard, biblioteca/constructor de rutinas, historial clínico (CIE-10) con documentos, planes de tratamiento, escalas de resultado, analítica
+- **Administrador** — Agenda, citas (CRUD + recurrentes), pacientes, doctores, salas, asignaciones, usuarios, bitácora de auditoría
+- **Mensajería** — Chat paciente↔terapeuta en tiempo real (Socket.IO)
+- **Notificaciones** — Centro in-app + email (Nodemailer), con horario silencioso
+- **IA** — Transcripción de audio (Whisper) y resúmenes clínicos (Ollama)
+- **Plataforma** — i18n (es/en), modo claro/oscuro, PWA con modo offline, healthchecks, auditoría y endurecimiento de seguridad
 
 ## Variables de entorno
 
@@ -136,7 +179,7 @@ VITE_API_URL=http://localhost:3001/api
 ### Backend (`backend/.env`)
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="postgresql://fisio:fisio@localhost:5432/fisiomanager?schema=public"
 JWT_SECRET="cambia-esto-por-un-secreto-seguro"
 PORT=3001
 CORS_ORIGIN="http://localhost:5173"

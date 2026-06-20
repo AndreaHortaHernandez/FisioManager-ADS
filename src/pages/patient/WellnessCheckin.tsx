@@ -1,30 +1,34 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { Mic, Square, CheckCircle, Loader2, ArrowRight, AlertCircle, Phone, Heart, BookOpen } from 'lucide-react';
 import { useStore } from '../../store/useStore';
+import { BodyMap } from '../../components/BodyMap';
+import type { PainPointInput } from '../../services/metrics.api';
 import type { Feedback } from '../../types';
 
-type EmotionOption = { value: Feedback['emotionalState']; label: string; emoji: string; color: string };
+type EmotionOption = { value: Feedback['emotionalState']; labelKey: string; emoji: string; color: string };
 
 const EMOTIONS: EmotionOption[] = [
-  { value: 'GREAT',    label: 'Excelente', emoji: '😄', color: 'bg-secondary/10 border-secondary/30 text-secondary' },
-  { value: 'GOOD',     label: 'Bien',      emoji: '🙂', color: 'bg-primary/10 border-primary/30 text-primary' },
-  { value: 'OK',       label: 'Regular',   emoji: '😐', color: 'bg-tertiary/10 border-tertiary/30 text-tertiary' },
-  { value: 'BAD',      label: 'Mal',       emoji: '😟', color: 'bg-error/10 border-error/30 text-error' },
+  { value: 'GREAT',    labelKey: 'patient.emotions.great', emoji: '😄', color: 'bg-secondary/10 border-secondary/30 text-secondary' },
+  { value: 'GOOD',     labelKey: 'patient.emotions.good',  emoji: '🙂', color: 'bg-primary/10 border-primary/30 text-primary' },
+  { value: 'OK',       labelKey: 'patient.emotions.ok',    emoji: '😐', color: 'bg-tertiary/10 border-tertiary/30 text-tertiary' },
+  { value: 'BAD',      labelKey: 'patient.emotions.bad',   emoji: '😟', color: 'bg-error/10 border-error/30 text-error' },
 ];
 
 const RESOURCES = [
-  { icon: Phone, title: 'Línea de apoyo emocional', desc: 'SAPTEL: 55 5259-8121 — 24 horas, todos los días.', color: 'text-secondary' },
-  { icon: Heart, title: 'Respiración de emergencia', desc: 'Inhala 4s, sostén 4s, exhala 6s. Repite 5 veces.', color: 'text-primary' },
-  { icon: BookOpen, title: 'Diario de gratitud', desc: 'Escribe 3 cosas por las que estés agradecido hoy.', color: 'text-tertiary' },
+  { icon: Phone, titleKey: 'patient.checkin.resourceSupportLine', descKey: 'patient.checkin.resourceSupportLineDesc', color: 'text-secondary' },
+  { icon: Heart, titleKey: 'patient.checkin.resourceBreathing', descKey: 'patient.checkin.resourceBreathingDesc', color: 'text-primary' },
+  { icon: BookOpen, titleKey: 'patient.checkin.resourceGratitude', descKey: 'patient.checkin.resourceGratitudeDesc', color: 'text-tertiary' },
 ];
 
 type RecordState = 'IDLE' | 'RECORDING' | 'PROCESSING' | 'DONE';
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api';
 
 export function WellnessCheckin() {
+  const { t } = useTranslation();
   const navigate         = useNavigate();
   const addFeedback      = useStore(state => state.addFeedback);
   const currentUserId    = useStore(state => state.currentUser);
@@ -35,6 +39,7 @@ export function WellnessCheckin() {
 
   const [emotion, setEmotion]         = useState<Feedback['emotionalState']>('GOOD');
   const [discomfort, setDiscomfort]   = useState(3);
+  const [painPoints, setPainPoints]   = useState<PainPointInput[]>([]);
   const [notes, setNotes]             = useState('');
   const [recordState, setRecordState] = useState<RecordState>('IDLE');
   const [transcript, setTranscript]   = useState('');
@@ -67,7 +72,7 @@ export function WellnessCheckin() {
       recorder.start();
       setRecordState('RECORDING');
     } catch {
-      setMicError('No se pudo acceder al micrófono.');
+      setMicError(t('patient.checkin.micError'));
     }
   };
 
@@ -114,10 +119,11 @@ export function WellnessCheckin() {
         emotionalState: emotion,
         audioRecordUrl: audioUrl  || undefined,
         transcript:     transcript || notes || undefined,
+        painPoints:     painPoints.length > 0 ? painPoints : undefined,
       });
       setDone(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar');
+      setError(err instanceof Error ? err.message : t('patient.checkin.saveError'));
     } finally {
       setLoading(false);
     }
@@ -129,9 +135,9 @@ export function WellnessCheckin() {
         <div className="w-20 h-20 rounded-full bg-secondary/20 flex items-center justify-center">
           <CheckCircle size={44} className="text-secondary" />
         </div>
-        <h2 className="text-2xl font-display font-bold text-on-surface">¡Registrado!</h2>
-        <p className="text-on-surface-variant text-sm">Tu check-in de bienestar ha sido guardado.</p>
-        <Button onClick={() => navigate('/patient')}>Volver al inicio</Button>
+        <h2 className="text-2xl font-display font-bold text-on-surface">{t('patient.checkin.savedTitle')}</h2>
+        <p className="text-on-surface-variant text-sm">{t('patient.checkin.savedDesc')}</p>
+        <Button onClick={() => navigate('/patient')}>{t('patient.checkin.backHome')}</Button>
       </div>
     );
   }
@@ -139,13 +145,12 @@ export function WellnessCheckin() {
   return (
     <div className="space-y-8 animate-fade-in pb-12">
       <header>
-        <h1 className="text-3xl font-display font-bold text-on-surface mb-1">Check-in de Bienestar</h1>
-        <p className="text-on-surface-variant font-body text-sm">¿Cómo estás hoy? Tómate un momento.</p>
+        <h1 className="text-3xl font-display font-bold text-on-surface mb-1">{t('patient.checkin.title')}</h1>
+        <p className="text-on-surface-variant font-body text-sm">{t('patient.checkin.subtitle')}</p>
       </header>
 
-      {}
       <Card className="space-y-4">
-        <h2 className="text-lg font-display font-bold">¿Cómo te sientes ahora?</h2>
+        <h2 className="text-lg font-display font-bold">{t('patient.checkin.howFeelNow')}</h2>
         <div className="grid grid-cols-2 gap-3">
           {EMOTIONS.map(opt => (
             <button
@@ -158,16 +163,15 @@ export function WellnessCheckin() {
               }`}
             >
               <span className="text-3xl">{opt.emoji}</span>
-              <span className="text-sm font-bold">{opt.label}</span>
+              <span className="text-sm font-bold">{t(opt.labelKey)}</span>
             </button>
           ))}
         </div>
       </Card>
 
-      {}
       <Card className="space-y-4">
-        <h2 className="text-lg font-display font-bold">Nivel de malestar</h2>
-        <p className="text-sm text-on-surface-variant">Del 1 (ninguno) al 10 (severo).</p>
+        <h2 className="text-lg font-display font-bold">{t('patient.checkin.discomfortLevel')}</h2>
+        <p className="text-sm text-on-surface-variant">{t('patient.checkin.discomfortRange')}</p>
         <input
           type="range" min="1" max="10"
           value={discomfort}
@@ -179,19 +183,23 @@ export function WellnessCheckin() {
         </div>
       </Card>
 
-      {}
+      <Card className="space-y-4">
+        <h2 className="text-lg font-display font-bold">{t('patient.checkin.whereHurts')}</h2>
+        <p className="text-sm text-on-surface-variant">{t('patient.checkin.whereHurtsDesc')}</p>
+        <BodyMap value={painPoints} onChange={setPainPoints} />
+      </Card>
+
       <Card level={2} className="space-y-4">
-        <h2 className="text-lg font-display font-bold">Diario personal</h2>
-        <p className="text-sm text-on-surface-variant">Escribe cómo te sientes o graba una nota de voz.</p>
+        <h2 className="text-lg font-display font-bold">{t('patient.checkin.personalDiary')}</h2>
+        <p className="text-sm text-on-surface-variant">{t('patient.checkin.personalDiaryDesc')}</p>
         <textarea
           value={notes}
           onChange={e => setNotes(e.target.value)}
           rows={4}
-          placeholder="Hoy me siento…"
+          placeholder={t('patient.checkin.diaryPlaceholder')}
           className="w-full bg-surface-container rounded-xl p-3 text-sm text-on-surface resize-none outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-on-surface-variant/50"
         />
 
-        {}
         <div className="flex flex-col items-center gap-3 py-2">
           {recordState === 'IDLE' && (
             <button
@@ -220,10 +228,10 @@ export function WellnessCheckin() {
             </div>
           )}
           <p className="text-xs text-on-surface-variant text-center">
-            {recordState === 'IDLE'       && 'Toca el micrófono para grabar una nota de voz'}
-            {recordState === 'RECORDING'  && 'Grabando… toca para detener'}
-            {recordState === 'PROCESSING' && 'Transcribiendo con IA…'}
-            {recordState === 'DONE'       && 'Nota de voz añadida al diario'}
+            {recordState === 'IDLE'       && t('patient.checkin.recordIdle')}
+            {recordState === 'RECORDING'  && t('patient.checkin.recordRecording')}
+            {recordState === 'PROCESSING' && t('patient.checkin.recordProcessing')}
+            {recordState === 'DONE'       && t('patient.checkin.recordDone')}
           </p>
           {micError && (
             <p className="flex items-center gap-1 text-xs text-error">
@@ -233,19 +241,18 @@ export function WellnessCheckin() {
         </div>
       </Card>
 
-      {}
       <section className="space-y-3">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">Recursos de apoyo</h2>
+        <h2 className="text-sm font-bold uppercase tracking-wider text-on-surface-variant">{t('patient.checkin.supportResources')}</h2>
         {RESOURCES.map(r => {
           const Icon = r.icon;
           return (
-            <Card key={r.title} level={2} className="flex items-start gap-4 border-ghost py-3">
+            <Card key={r.titleKey} level={2} className="flex items-start gap-4 border-ghost py-3">
               <div className={`w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center shrink-0 ${r.color}`}>
                 <Icon size={20} />
               </div>
               <div>
-                <p className="font-bold text-on-surface text-sm">{r.title}</p>
-                <p className="text-xs text-on-surface-variant mt-0.5">{r.desc}</p>
+                <p className="font-bold text-on-surface text-sm">{t(r.titleKey)}</p>
+                <p className="text-xs text-on-surface-variant mt-0.5">{t(r.descKey)}</p>
               </div>
             </Card>
           );
@@ -262,23 +269,22 @@ export function WellnessCheckin() {
         onClick={handleSubmit}
         disabled={recordState === 'RECORDING' || recordState === 'PROCESSING' || loading}
       >
-        {loading ? 'Guardando...' : 'Guardar check-in'} <ArrowRight size={20} />
+        {loading ? t('patient.checkin.saving') : t('patient.checkin.saveCheckin')} <ArrowRight size={20} />
       </Button>
 
       {showConsent && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <Card className="max-w-sm space-y-4">
-            <h2 className="text-lg font-display font-bold">Consentimiento de grabación</h2>
+            <h2 className="text-lg font-display font-bold">{t('patient.checkin.consentTitle')}</h2>
             <p className="text-sm text-on-surface-variant">
-              Para grabar una nota de voz necesitamos tu consentimiento para procesar el audio con inteligencia
-              artificial (transcripción). Puedes seguir usando el diario solo con texto.
+              {t('patient.checkin.consentBody')}
             </p>
             <div className="flex gap-3">
               <button onClick={() => setShowConsent(false)}
                 className="flex-1 py-2.5 rounded-xl border border-surface-container-high text-sm hover:bg-surface-container transition-colors">
-                Cancelar
+                {t('common.cancel')}
               </button>
-              <Button onClick={acceptConsentAndRecord} className="flex-1">Aceptar y grabar</Button>
+              <Button onClick={acceptConsentAndRecord} className="flex-1">{t('patient.checkin.consentAccept')}</Button>
             </div>
           </Card>
         </div>

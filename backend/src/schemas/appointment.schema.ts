@@ -7,6 +7,12 @@ export const createAppointmentSchema = z.object({
   roomId: z.string().optional(),
   treatmentPlanId: z.string().optional(),
   notes: z.string().optional(),
+  recurrence: z
+    .object({
+      frequency: z.enum(['WEEKLY', 'BIWEEKLY']),
+      count: z.number().int().min(2).max(26),
+    })
+    .optional(),
 });
 
 export const updateAppointmentSchema = z.object({

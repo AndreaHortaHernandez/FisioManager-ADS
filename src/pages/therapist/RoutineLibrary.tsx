@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore } from '../../store/useStore';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -8,16 +9,16 @@ import { useNavigate } from 'react-router-dom';
 import type { AssignmentFrequency, AssignmentStatus, RoutineAssignment } from '../../types';
 import { toLocalDateString } from '../../utils/date';
 
-const FREQUENCY_LABELS: Record<AssignmentFrequency, string> = {
-  DAILY:           'Diario',
-  EVERY_OTHER_DAY: 'Cada 2 días',
-  WEEKLY:          'Semanal',
+const FREQUENCY_LABEL_KEYS: Record<AssignmentFrequency, string> = {
+  DAILY:           'therapist.routines.frequency.daily',
+  EVERY_OTHER_DAY: 'therapist.routines.frequency.everyOtherDay',
+  WEEKLY:          'therapist.routines.frequency.weekly',
 };
 
-const STATUS_LABELS: Record<AssignmentStatus, string> = {
-  ACTIVE:    'Activa',
-  PAUSED:    'Pausada',
-  CANCELLED: 'Cancelada',
+const STATUS_LABEL_KEYS: Record<AssignmentStatus, string> = {
+  ACTIVE:    'therapist.routines.assignmentStatus.active',
+  PAUSED:    'therapist.routines.assignmentStatus.paused',
+  CANCELLED: 'therapist.routines.assignmentStatus.cancelled',
 };
 
 const STATUS_COLORS: Record<AssignmentStatus, string> = {
@@ -27,6 +28,7 @@ const STATUS_COLORS: Record<AssignmentStatus, string> = {
 };
 
 export function RoutineLibrary() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const allRoutines          = useStore(state => state.routines);
   const patients             = useStore(state => state.patients);
@@ -78,7 +80,7 @@ export function RoutineLibrary() {
   };
 
   const handleDelete = async (routineId: string) => {
-    if (!window.confirm('¿Eliminar esta rutina? Esta acción no se puede deshacer.')) return;
+    if (!window.confirm(t('therapist.routines.confirmDelete'))) return;
     await deleteRoutine(routineId);
   };
 
@@ -90,24 +92,24 @@ export function RoutineLibrary() {
       <div className="flex-1 min-w-0">
         <p className="font-bold text-on-surface truncate">{a.routine?.title ?? '—'}</p>
         <p className="text-xs text-on-surface-variant">
-          {a.patient?.name ?? '—'} · {FREQUENCY_LABELS[a.frequency]} · desde {a.startDate.split('T')[0]}
-          {a.endDate ? ` hasta ${a.endDate.split('T')[0]}` : ''}
+          {a.patient?.name ?? '—'} · {t(FREQUENCY_LABEL_KEYS[a.frequency])} · {t('therapist.routines.from', { date: a.startDate.split('T')[0] })}
+          {a.endDate ? ` ${t('therapist.routines.until', { date: a.endDate.split('T')[0] })}` : ''}
         </p>
       </div>
       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[a.status]}`}>
-        {STATUS_LABELS[a.status]}
+        {t(STATUS_LABEL_KEYS[a.status])}
       </span>
       {a.status === 'ACTIVE' && (
         <div className="flex gap-2">
           <button
-            title="Pausar"
+            title={t('therapist.routines.action.pause')}
             onClick={() => updateAssignmentStatus(a.id, 'PAUSED')}
             className="p-1.5 rounded-lg text-yellow-600 hover:bg-yellow-50 transition-colors"
           >
             <Pause size={16} />
           </button>
           <button
-            title="Cancelar"
+            title={t('common.cancel')}
             onClick={() => updateAssignmentStatus(a.id, 'CANCELLED')}
             className="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors"
           >
@@ -117,7 +119,7 @@ export function RoutineLibrary() {
       )}
       {a.status === 'PAUSED' && (
         <button
-          title="Reactivar"
+          title={t('therapist.routines.action.reactivate')}
           onClick={() => updateAssignmentStatus(a.id, 'ACTIVE')}
           className="p-1.5 rounded-lg text-green-600 hover:bg-green-50 transition-colors"
         >
@@ -131,19 +133,18 @@ export function RoutineLibrary() {
     <div className="space-y-8 animate-fade-in">
       <header className="flex justify-between items-end mb-6">
         <div>
-          <h1 className="text-3xl font-display font-bold text-on-surface mb-2">Routine Library</h1>
-          <p className="text-on-surface-variant font-body">Gestiona tus plantillas y asignaciones.</p>
+          <h1 className="text-3xl font-display font-bold text-on-surface mb-2">{t('therapist.routines.title')}</h1>
+          <p className="text-on-surface-variant font-body">{t('therapist.routines.subtitle')}</p>
         </div>
         <Button onClick={() => navigate('/therapist/routines/builder')} className="flex items-center gap-2">
-          <Plus size={20} /> Build New Routine
+          <Plus size={20} /> {t('therapist.routines.buildNew')}
         </Button>
       </header>
 
-      {}
       <div className="flex gap-2 border-b border-surface-container-high pb-0">
-        {['Plantillas', 'Asignaciones'].map((tab, i) => (
+        {['therapist.routines.tab.templates', 'therapist.routines.tab.assignments'].map((tabKey, i) => (
           <button
-            key={tab}
+            key={tabKey}
             onClick={() => setAssignmentsTab(i === 1)}
             className={`px-5 py-2.5 text-sm font-bold transition-colors border-b-2 -mb-px ${
               assignmentsTab === (i === 1)
@@ -151,22 +152,21 @@ export function RoutineLibrary() {
                 : 'border-transparent text-on-surface-variant hover:text-on-surface'
             }`}
           >
-            {tab}
+            {t(tabKey)}
           </button>
         ))}
       </div>
 
-      {}
       {!assignmentsTab && (
         libraryRoutines.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-20 bg-surface-container-lowest rounded-2xl border-ghost">
             <BookMarked size={64} className="text-outline-variant mb-4" />
-            <p className="text-xl font-display font-bold text-on-surface">Tu biblioteca está vacía</p>
+            <p className="text-xl font-display font-bold text-on-surface">{t('therapist.routines.emptyLibrary')}</p>
             <p className="text-on-surface-variant mt-2 mb-6 text-center max-w-sm">
-              Aún no has creado ninguna rutina. Crea una para usarla como plantilla.
+              {t('therapist.routines.emptyLibraryHint')}
             </p>
             <Button onClick={() => navigate('/therapist/routines/builder')} variant="secondary">
-              Empezar a construir
+              {t('therapist.routines.startBuilding')}
             </Button>
           </div>
         ) : (
@@ -176,7 +176,7 @@ export function RoutineLibrary() {
                 <div className="mb-6">
                   <span className="text-xs font-bold text-primary tracking-wider uppercase mb-2 block">{routine.type}</span>
                   <h2 className="text-xl font-display font-bold text-on-surface mb-1">{routine.title}</h2>
-                  <p className="text-sm text-on-surface-variant">{routine.activities.length} actividades</p>
+                  <p className="text-sm text-on-surface-variant">{t('therapist.routines.activitiesCount', { count: routine.activities.length })}</p>
                 </div>
                 <div className="space-y-2">
                   <div className="flex gap-2">
@@ -185,19 +185,19 @@ export function RoutineLibrary() {
                       className="flex items-center justify-center gap-2 flex-1"
                       onClick={() => navigate(`/therapist/routines/builder/${routine.id}`)}
                     >
-                      <Pencil size={16} /> Editar
+                      <Pencil size={16} /> {t('therapist.routines.edit')}
                     </Button>
                     <Button
                       variant="secondary"
                       className="flex items-center justify-center gap-2 flex-1"
                       onClick={() => handleClone(routine.id)}
                     >
-                      <Copy size={16} /> Clonar
+                      <Copy size={16} /> {t('therapist.routines.clone')}
                     </Button>
                     <button
                       onClick={() => handleDelete(routine.id)}
                       className="p-2 rounded-lg text-error hover:bg-error/10 transition-colors"
-                      title="Eliminar rutina"
+                      title={t('therapist.routines.deleteRoutine')}
                     >
                       <Trash2 size={18} />
                     </button>
@@ -207,7 +207,7 @@ export function RoutineLibrary() {
                     className="flex items-center justify-center gap-2"
                     onClick={() => handleOpenAssign(routine.id)}
                   >
-                    <Users size={16} /> Asignar a paciente
+                    <Users size={16} /> {t('therapist.routines.assignToPatient')}
                   </Button>
                 </div>
               </Card>
@@ -216,22 +216,21 @@ export function RoutineLibrary() {
         )
       )}
 
-      {}
       {assignmentsTab && (
         <div className="space-y-6">
           {routineAssignments.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-20 bg-surface-container-lowest rounded-2xl border-ghost">
               <Calendar size={64} className="text-outline-variant mb-4" />
-              <p className="text-xl font-display font-bold text-on-surface">Sin asignaciones</p>
+              <p className="text-xl font-display font-bold text-on-surface">{t('therapist.routines.noAssignments')}</p>
               <p className="text-on-surface-variant mt-2 mb-6 text-center max-w-sm">
-                Asigna una rutina a un paciente desde la pestaña Plantillas.
+                {t('therapist.routines.noAssignmentsHint')}
               </p>
             </div>
           ) : (
             <>
               {activeAssignments.length > 0 && (
                 <section>
-                  <h2 className="font-display font-bold text-lg mb-3">Activas</h2>
+                  <h2 className="font-display font-bold text-lg mb-3">{t('therapist.routines.activeSection')}</h2>
                   <div className="space-y-2">
                     {activeAssignments.map(a => <AssignmentRow key={a.id} a={a} />)}
                   </div>
@@ -239,7 +238,7 @@ export function RoutineLibrary() {
               )}
               {inactiveAssignments.length > 0 && (
                 <section>
-                  <h2 className="font-display font-bold text-lg mb-3 text-on-surface-variant">Pausadas / Canceladas</h2>
+                  <h2 className="font-display font-bold text-lg mb-3 text-on-surface-variant">{t('therapist.routines.inactiveSection')}</h2>
                   <div className="space-y-2">
                     {inactiveAssignments.map(a => <AssignmentRow key={a.id} a={a} />)}
                   </div>
@@ -250,28 +249,25 @@ export function RoutineLibrary() {
         </div>
       )}
 
-      {}
-      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title="Asignar rutina a paciente">
+      <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)} title={t('therapist.routines.assignModalTitle')}>
         <div className="space-y-4 mb-6">
-          {}
           <div>
-            <label className="text-sm font-bold text-on-surface-variant mb-1 block">Paciente</label>
+            <label className="text-sm font-bold text-on-surface-variant mb-1 block">{t('therapist.routines.form.patient')}</label>
             <select
               value={selectedPatientId}
               onChange={e => setSelectedPatientId(e.target.value)}
               className="w-full bg-surface-container text-on-surface rounded-t-lg px-4 py-3 border-b-2 border-transparent outline-none focus:bg-surface-container-lowest focus:border-primary"
             >
-              <option value="">Selecciona un paciente…</option>
+              <option value="">{t('therapist.routines.form.selectPatient')}</option>
               {patients.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           </div>
 
-          {}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-bold text-on-surface-variant mb-1 block">Fecha inicio *</label>
+              <label className="text-sm font-bold text-on-surface-variant mb-1 block">{t('therapist.routines.form.startDate')}</label>
               <input
                 type="date"
                 value={startDate}
@@ -280,7 +276,7 @@ export function RoutineLibrary() {
               />
             </div>
             <div>
-              <label className="text-sm font-bold text-on-surface-variant mb-1 block">Fecha fin (opcional)</label>
+              <label className="text-sm font-bold text-on-surface-variant mb-1 block">{t('therapist.routines.form.endDate')}</label>
               <input
                 type="date"
                 value={endDate}
@@ -291,9 +287,8 @@ export function RoutineLibrary() {
             </div>
           </div>
 
-          {}
           <div>
-            <label className="text-sm font-bold text-on-surface-variant mb-1 block">Frecuencia</label>
+            <label className="text-sm font-bold text-on-surface-variant mb-1 block">{t('therapist.routines.form.frequency')}</label>
             <div className="flex gap-2">
               {(['DAILY', 'EVERY_OTHER_DAY', 'WEEKLY'] as AssignmentFrequency[]).map(f => (
                 <button
@@ -305,7 +300,7 @@ export function RoutineLibrary() {
                       : 'border-ghost text-on-surface-variant hover:border-primary hover:text-primary'
                   }`}
                 >
-                  {FREQUENCY_LABELS[f]}
+                  {t(FREQUENCY_LABEL_KEYS[f])}
                 </button>
               ))}
             </div>
@@ -313,13 +308,13 @@ export function RoutineLibrary() {
         </div>
 
         <div className="flex gap-4 justify-end">
-          <Button variant="tertiary" onClick={() => setModalOpen(false)}>Cancelar</Button>
+          <Button variant="tertiary" onClick={() => setModalOpen(false)}>{t('common.cancel')}</Button>
           <Button
             onClick={handleConfirmAssign}
             disabled={!selectedPatientId || !startDate}
             className="flex items-center gap-2"
           >
-            <Check size={16} /> Confirmar asignación
+            <Check size={16} /> {t('therapist.routines.confirmAssign')}
           </Button>
         </div>
       </Modal>

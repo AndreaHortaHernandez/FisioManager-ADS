@@ -1,4 +1,28 @@
 services:
+  # ── PostgreSQL (base de datos principal) ─────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: fisio-postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-fisio}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-fisio}
+      - POSTGRES_DB=${POSTGRES_DB:-fisiomanager}
+    volumes:
+      - fisio-pgdata:/var/lib/postgresql/data
+    # No se expone 5432 al host por defecto (evita conflicto con un Postgres local).
+    expose:
+      - "5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fisio} -d ${POSTGRES_DB:-fisiomanager}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    deploy:
+      resources:
+        limits: { cpus: "1", memory: 1g }
+        reservations: { memory: 256m }
+
   # ── Ollama (LLM para resúmenes clínicos e insights) ──────────────────────
   ollama:
     image: ollama/ollama:latest
@@ -15,6 +39,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 12
+    # Ollama corre la inferencia en CPU: es el servicio más pesado. Ajusta según tu host.
+    deploy:
+      resources:
+        limits: { cpus: "4", memory: 8g }
+        reservations: { memory: 2g }
 
   # Descarga el modelo dentro del volumen de Ollama y termina.
   ollama-pull:
@@ -34,27 +63,72 @@ services:
       context: ./backend
     container_name: fisio-backend
     depends_on:
+      postgres:
+        condition: service_healthy
       ollama:
         condition: service_healthy
     environment:
       - NODE_ENV=production
       - PORT=3001
-      - DATABASE_URL=file:/data/fisio.db
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-fisio}:${POSTGRES_PASSWORD:-fisio}@postgres:5432/${POSTGRES_DB:-fisiomanager}?schema=public
       - JWT_SECRET=${JWT_SECRET:-cambia-esto-por-un-secreto-seguro-en-produccion}
       - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma4:e2b}
-      - CORS_ORIGIN=http://localhost:8080
-      # SMTP real (si EMAIL_HOST está vacío se usa Ethereal de prueba).
+      # Apunta al dominio real del frontend en producción.
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:8080}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8080}
+      # Observabilidad opcional (Sentry). Vacío = solo logs locales.
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      # SMTP real (si EMAIL_HOST está vacío se usa transporte de prueba).
       - EMAIL_HOST=${EMAIL_HOST:-}
       - EMAIL_PORT=${EMAIL_PORT:-587}
       - EMAIL_USER=${EMAIL_USER:-}
       - EMAIL_PASS=${EMAIL_PASS:-}
       - EMAIL_FROM=${EMAIL_FROM:-FisioManager <noreply@fisiomanager.com>}
+      # Almacenamiento de archivos: 'local' (disco) o 's3' (S3/MinIO).
+      - STORAGE_DRIVER=${STORAGE_DRIVER:-local}
+      - S3_ENDPOINT=${S3_ENDPOINT:-}
+      - S3_BUCKET=${S3_BUCKET:-}
+      - S3_REGION=${S3_REGION:-us-east-1}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY:-}
+      - S3_SECRET_KEY=${S3_SECRET_KEY:-}
+      - S3_PUBLIC_URL=${S3_PUBLIC_URL:-}
+      # Escalado horizontal de Socket.IO (vacío = memoria local, una sola instancia).
+      - REDIS_URL=${REDIS_URL:-}
     volumes:
-      - fisio-db:/data
       - fisio-uploads:/app/uploads
     ports:
       - "3001:3001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits: { cpus: "2", memory: 2g }
+        reservations: { memory: 512m }
+
+  # ── Backups automáticos de PostgreSQL (pg_dump programado + retención) ────
+  db-backup:
+    image: prodrigestivill/postgres-backup-local:16
+    container_name: fisio-db-backup
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-fisiomanager}
+      - POSTGRES_USER=${POSTGRES_USER:-fisio}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-fisio}
+      - SCHEDULE=${BACKUP_SCHEDULE:-@daily}
+      - BACKUP_KEEP_DAYS=${BACKUP_KEEP_DAYS:-7}
+      - BACKUP_KEEP_WEEKS=${BACKUP_KEEP_WEEKS:-4}
+      - BACKUP_KEEP_MONTHS=${BACKUP_KEEP_MONTHS:-6}
+    volumes:
+      - fisio-backups:/backups
     restart: unless-stopped
 
   # ── Frontend (Vite build servido por nginx + reverse-proxy) ──────────────
@@ -65,12 +139,17 @@ services:
         VITE_API_URL: /api
     container_name: fisio-frontend
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "8080:80"
     restart: unless-stopped
+    deploy:
+      resources:
+        limits: { cpus: "0.5", memory: 128m }
 
 volumes:
   ollama-models:
-  fisio-db:
+  fisio-pgdata:
   fisio-uploads:
+  fisio-backups:
