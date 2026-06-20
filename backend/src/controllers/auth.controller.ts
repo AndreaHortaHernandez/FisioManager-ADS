@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { authService } from '../services/auth.service';
 import { catchAsync } from '../utils/catchAsync';
-import { ok, created } from '../utils/response';
+import { ok } from '../utils/response';
 import { AppError } from '../errors/AppError';
 
 export const login = catchAsync(async (req: Request, res: Response) => {
@@ -9,26 +9,9 @@ export const login = catchAsync(async (req: Request, res: Response) => {
   ok(res, result);
 });
 
-export const register = catchAsync(async (req: Request, res: Response) => {
-  const { name, email, password, role, age, condition, therapistId, avatarUrl } = req.body;
-  const patientProfile =
-    role === 'PATIENT' && age && condition && therapistId
-      ? { age, condition, therapistId }
-      : undefined;
-
-  const result = await authService.register({ name, email, password, role, avatarUrl, patientProfile });
-  created(res, result);
-});
-
 export const getMe = catchAsync(async (req: Request, res: Response) => {
   const user = await authService.getProfile(req.user!.id);
   ok(res, user);
-});
-
-export const signup = catchAsync(async (req: Request, res: Response) => {
-  const { name, email, password } = req.body;
-  const result = await authService.signup({ name, email, password });
-  created(res, result);
 });
 
 export const logout = catchAsync(async (req: Request, res: Response) => {

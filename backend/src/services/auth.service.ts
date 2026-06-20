@@ -44,42 +44,6 @@ export const authService = {
     return { token, refreshToken, user: sanitize(user) };
   },
 
-  async signup(data: { name: string; email: string; password: string }) {
-    const exists = await userRepository.findByEmail(data.email);
-    if (exists) throw new AppError('El email ya está registrado', 409);
-
-    const hashed = await bcrypt.hash(data.password, 10);
-    const user = await userRepository.create({
-      name: data.name,
-      email: data.email,
-      password: hashed,
-      role: 'PATIENT',
-    });
-
-    const token = signToken(user.id, user.role, user.name);
-    const refreshToken = await issueRefreshToken(user.id);
-    return { token, refreshToken, user: sanitize(user) };
-  },
-
-  async register(data: {
-    name: string;
-    email: string;
-    password: string;
-    role: string;
-    avatarUrl?: string;
-    patientProfile?: { age: number; condition: string; therapistId: string };
-  }) {
-    const exists = await userRepository.findByEmail(data.email);
-    if (exists) throw new AppError('El email ya está registrado', 409);
-
-    const hashed = await bcrypt.hash(data.password, 10);
-    const user = await userRepository.create({ ...data, password: hashed });
-
-    const token = signToken(user.id, user.role, user.name);
-    const refreshToken = await issueRefreshToken(user.id);
-    return { token, refreshToken, user: sanitize(user) };
-  },
-
   async getProfile(userId: string) {
     const user = await userRepository.findById(userId);
     if (!user) throw new AppError('Usuario no encontrado', 404);

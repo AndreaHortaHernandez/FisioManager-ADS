@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import {
-  login, register, getMe, logout, recover, reset, signup, changePassword, giveConsent,
+  login, getMe, logout, recover, reset, changePassword, giveConsent,
   refresh, updateProfile, uploadAvatar,
 } from '../controllers/auth.controller';
 import { authMiddleware } from '../middlewares/auth.middleware';
 import { validate } from '../middlewares/validate.middleware';
 import { avatarUpload } from '../middlewares/upload.middleware';
 import {
-  loginSchema, registerSchema, recoverSchema, resetSchema, signupSchema, changePasswordSchema,
+  loginSchema, recoverSchema, resetSchema, changePasswordSchema,
   refreshSchema, updateProfileSchema,
 } from '../schemas/auth.schema';
 
@@ -35,32 +35,6 @@ const router = Router();
  *       401: { description: Credenciales inválidas }
  */
 router.post('/login', validate(loginSchema), login);
-
-/**
- * @swagger
- * /auth/register:
- *   post:
- *     tags: [Auth]
- *     summary: Registra un nuevo usuario (paciente o terapeuta)
- *     security: []
- *     requestBody:
- *       required: true
- *     responses:
- *       201: { description: Usuario creado }
- */
-router.post('/register', validate(registerSchema), register);
-
-/**
- * @swagger
- * /auth/signup:
- *   post:
- *     tags: [Auth]
- *     summary: Auto-registro público de paciente
- *     security: []
- *     responses:
- *       201: { description: Usuario creado y sesión iniciada }
- */
-router.post('/signup', validate(signupSchema), signup);
 
 /**
  * @swagger

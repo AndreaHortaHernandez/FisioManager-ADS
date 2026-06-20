@@ -26,7 +26,6 @@ interface AppState {
   routineAssignments: RoutineAssignment[];
 
   login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
   applySession: (token: string, user: AuthUser, refreshToken?: string) => Promise<void>;
   logout: () => void;
   giveAudioConsent: () => Promise<void>;
@@ -90,11 +89,6 @@ export const useStore = create<AppState>()(
 
       login: async (email, password) => {
         const { token, refreshToken, user } = await authApi.login(email, password);
-        await get().applySession(token, user, refreshToken);
-      },
-
-      signup: async (name, email, password) => {
-        const { token, refreshToken, user } = await authApi.signup(name, email, password);
         await get().applySession(token, user, refreshToken);
       },
 

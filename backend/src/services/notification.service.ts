@@ -61,6 +61,7 @@ export const notificationService = {
           await appointmentRepository.markReminded(appt.id);
           continue;
         }
+        await appointmentRepository.markReminded(appt.id);
         await emailService.sendAppointmentReminder({
           patientName:   appt.patient.name,
           patientEmail:  appt.patient.email,
@@ -68,7 +69,6 @@ export const notificationService = {
           dateTime:      appt.dateTime,
           notes:         appt.notes ?? undefined,
         });
-        await appointmentRepository.markReminded(appt.id);
         sent++;
       } catch (err) {
         logger.error('appointment_reminder_failed', { appointmentId: appt.id, error: (err as Error).message });
@@ -98,12 +98,12 @@ export const notificationService = {
           continue;
         }
         if (!a.patient.email) continue;
+        await routineAssignmentRepository.markReminded(a.id, now);
         await emailService.sendRoutineReminder({
           patientName:  a.patient.name,
           patientEmail: a.patient.email,
           routineTitle: a.routine.title,
         });
-        await routineAssignmentRepository.markReminded(a.id, now);
         sent++;
       } catch (err) {
         logger.error('routine_reminder_failed', { assignmentId: a.id, error: (err as Error).message });

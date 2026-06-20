@@ -14,6 +14,8 @@ import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminRooms } from './pages/admin/AdminRooms';
 
 import { LoginPage } from './pages/auth/LoginPage';
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage';
 
 import { PatientHome } from './pages/patient/PatientHome';
 import { PatientRoutines } from './pages/patient/PatientRoutines';
@@ -53,6 +55,8 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/" element={<AppRedirect />} />
 
         {}
