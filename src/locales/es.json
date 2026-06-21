@@ -403,6 +403,7 @@
     },
     "builder": {
       "validation": "Agrega un título y al menos una actividad.",
+      "saveError": "No se pudo guardar la rutina",
       "titleEdit": "Editar Rutina",
       "titleNew": "Constructor de Rutinas",
       "subtitleEdit": "Modifica el título, tipo y ejercicios.",

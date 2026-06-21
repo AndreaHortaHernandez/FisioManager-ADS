@@ -27,7 +27,8 @@ export interface Activity {
   repetitions: number;
   type: 'PHYSICAL' | 'BREATHING';
   order: number;
-  videoUrl?: string; 
+  videoUrl?: string;
+  imageUrl?: string;
 }
 
 export type BodyPart = 'KNEE' | 'BACK' | 'SHOULDER' | 'NECK' | 'ARM' | 'HIP' | 'ANKLE' | 'OTHER';

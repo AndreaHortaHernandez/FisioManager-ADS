@@ -42,6 +42,7 @@ export const routineRepository = {
       type: string;
       order: number;
       videoUrl?: string;
+      imageUrl?: string;
     }[];
   }) {
     const { activities, ...routineData } = data;
@@ -75,6 +76,7 @@ export const routineRepository = {
       type: string;
       order: number;
       videoUrl?: string;
+      imageUrl?: string;
     }[];
   }) {
     const { activities, ...routineData } = data;
@@ -90,6 +92,12 @@ export const routineRepository = {
   },
 
   delete(id: string) {
-    return prisma.routine.delete({ where: { id } });
+    return prisma.$transaction(async tx => {
+      await tx.sessionExercise.deleteMany({ where: { session: { routineId: id } } });
+      await tx.session.deleteMany({ where: { routineId: id } });
+      await tx.feedback.deleteMany({ where: { routineId: id } });
+      await tx.routineAssignment.deleteMany({ where: { routineId: id } });
+      return tx.routine.delete({ where: { id } });
+    });
   },
 };

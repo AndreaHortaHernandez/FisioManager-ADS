@@ -45,6 +45,7 @@ export const routineAssignmentService = {
         type:            a.type,
         order:           a.order,
         videoUrl:        a.videoUrl     ?? undefined,
+        imageUrl:        a.imageUrl     ?? undefined,
       })),
     });
 

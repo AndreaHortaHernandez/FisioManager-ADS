@@ -1,15 +1,16 @@
 import { z } from 'zod';
 
 const activitySchema = z.object({
-  templateId: z.string().optional(),
+  templateId: z.string().nullish(),
   title: z.string().min(1),
   description: z.string().min(1),
   durationMinutes: z.number().int().positive(),
-  restSeconds: z.number().int().min(0).optional(),
+  restSeconds: z.number().int().min(0).nullish(),
   repetitions: z.number().int().positive(),
   type: z.enum(['PHYSICAL', 'BREATHING']),
   order: z.number().int().min(1),
-  videoUrl: z.string().optional(),
+  videoUrl: z.string().nullish(),
+  imageUrl: z.string().nullish(),
 });
 
 export const createRoutineSchema = z.object({

@@ -59,6 +59,8 @@ export function RoutineBuilder() {
       restSeconds: 30,
       repetitions: 10,
       order: selectedActivities.length + 1,
+      videoUrl: template.videoUrl,
+      imageUrl: template.imageUrl,
     };
     setSelectedActivities(prev => [...prev, newActivity]);
   };
@@ -94,6 +96,7 @@ export function RoutineBuilder() {
           repetitions:     a.repetitions,
           order:           i + 1,
           videoUrl:        a.videoUrl,
+          imageUrl:        a.imageUrl,
         })),
       };
 
@@ -103,6 +106,8 @@ export function RoutineBuilder() {
         await addRoutine(payload);
       }
       navigate('/therapist/routines');
+    } catch (e) {
+      alert(e instanceof Error ? e.message : t('therapist.builder.saveError'));
     } finally {
       setSaving(false);
     }

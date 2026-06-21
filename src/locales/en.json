@@ -403,6 +403,7 @@
     },
     "builder": {
       "validation": "Add a title and at least one activity.",
+      "saveError": "Could not save the routine",
       "titleEdit": "Edit Routine",
       "titleNew": "Routine Builder",
       "subtitleEdit": "Modify the title, type and exercises.",

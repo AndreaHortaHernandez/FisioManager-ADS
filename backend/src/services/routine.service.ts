@@ -31,6 +31,7 @@ export const routineService = {
       type: string;
       order: number;
       videoUrl?: string;
+      imageUrl?: string;
     }[];
   }) {
     return routineRepository.create(data);
@@ -60,6 +61,7 @@ export const routineService = {
       type: string;
       order: number;
       videoUrl?: string;
+      imageUrl?: string;
     }[];
   }) {
     const existing = await routineRepository.findById(id);
@@ -91,6 +93,7 @@ export const routineService = {
         type: a.type,
         order: a.order,
         videoUrl: a.videoUrl ?? undefined,
+        imageUrl: a.imageUrl ?? undefined,
       })),
     });
   },
@@ -119,6 +122,7 @@ export const routineService = {
             type: a.type,
             order: a.order,
             videoUrl: a.videoUrl ?? undefined,
+            imageUrl: a.imageUrl ?? undefined,
           })),
         })
       )

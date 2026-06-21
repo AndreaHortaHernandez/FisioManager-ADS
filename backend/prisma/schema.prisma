@@ -117,6 +117,7 @@ model Activity {
   type            String // PHYSICAL | BREATHING
   order           Int
   videoUrl        String?
+  imageUrl        String?
 
   routine Routine @relation(fields: [routineId], references: [id], onDelete: Cascade)
 }

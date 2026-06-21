@@ -8,6 +8,8 @@ import { Play, Pause, ChevronRight, CheckCircle2, SkipForward } from 'lucide-rea
 import { cn } from '../../utils/cn';
 import { sessionApi } from '../../services/session.api';
 
+const BACKEND_URL = import.meta.env.VITE_API_URL?.replace('/api', '') ?? 'http://localhost:3001';
+
 export function RoutinePlayer() {
   const { t } = useTranslation();
   const { id } = useParams();
@@ -200,6 +202,21 @@ export function RoutinePlayer() {
                    <p className="text-secondary font-display font-bold text-2xl mb-2">{t('patient.player.relax')}</p>
                    <p className="text-on-secondary-container text-sm">{t('patient.player.breatheDeeply')}</p>
                  </div>
+              ) : currentActivity.videoUrl ? (
+                 <video
+                   src={`${BACKEND_URL}${currentActivity.videoUrl}`}
+                   className="w-full h-full object-cover"
+                   autoPlay
+                   loop
+                   muted
+                   playsInline
+                 />
+              ) : currentActivity.imageUrl ? (
+                 <img
+                   src={`${BACKEND_URL}${currentActivity.imageUrl}`}
+                   alt={currentActivity.title}
+                   className="w-full h-full object-cover"
+                 />
               ) : (
                  <div className="text-center">
                    <span className="text-6xl mb-2 block opacity-20">🎥</span>
